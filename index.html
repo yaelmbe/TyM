@@ -1,0 +1,2697 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cronómetros - 3 Secciones (Tubo Liso)</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@zurmokeeper/exceljs@4.4.9/dist/exceljs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <style>
+    :root{
+      --bg:#0f172a;
+      --panel:#111827;
+      --muted:#1f2937;
+      --text:#e5e7eb;
+      --sub:#9ca3af;
+      --accent:#22d3ee8f;
+      --accent-2:#34d39933;
+      --danger:#f87171;
+      --warning:#f59e0b;
+      --border:#374151;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,'Helvetica Neue',Arial,'Apple Color Emoji','Segoe UI Emoji';
+    }
+    header{
+      padding:16px 24px;
+      border-bottom:1px solid var(--border);
+      position:sticky;
+      top:0;
+      background:linear-gradient(180deg,rgba(15,23,42,.95),rgba(15,23,42,.85));
+      backdrop-filter:saturate(1.2) blur(8px);
+      z-index:10
+    }
+    h1{margin:0;font-size:20px;font-weight:700;letter-spacing:.2px}
+    .sub{color:var(--sub);font-size:12px}
+    .container{padding:20px;max-width:1500px;margin:0 auto}
+
+    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+    .tab{
+      padding:10px 14px;
+      border:1px solid var(--border);
+      background-color:var(--panel);
+      color:var(--text);
+      border-radius:999px;
+      cursor:pointer;
+      user-select:none;
+      transition:.2s
+    }
+    .tab[aria-selected="true"]{
+      background-color:#22d3ee;
+      color:var(--bg);
+      border-color:var(--accent);
+      box-shadow:0 0 0 1px inset rgba(34,211,238,.25)
+    }
+
+    .toolbar{display:flex;gap:15px;align-items:flex-end;flex-wrap:wrap;margin:12px 0 18px}
+    .toolbar label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--sub);}
+    .toolbar input[type="text"],
+    .toolbar input[type="number"],
+    .toolbar select,
+    .toolbar input[type="datetime-local"]{
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 12px;
+      color:var(--text);
+      min-width:180px
+    }
+    .toolbar input[type="number"]::-webkit-outer-spin-button,
+    .toolbar input[type="number"]::-webkit-inner-spin-button{
+      -webkit-appearance:none;
+      margin:0;
+    }
+    .toolbar input[type="number"]{
+      appearance:textfield;
+      -moz-appearance:textfield;
+    }
+    .toolbar .measure-input{min-width:110px!important;}
+    .toolbar select{min-width:120px!important;cursor:pointer;}
+    .toolbar .hint{font-size:12px;color:var(--sub);width:100%;}
+    .actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+
+    .btn{
+      border:1px solid var(--border);
+      background:var(--panel);
+      color:var(--text);
+      padding:8px 12px;
+      border-radius:10px;
+      cursor:pointer;
+      transition:.2s
+    }
+    .btn:hover{transform:translateY(-1px)}
+    .btn.primary{border-color:transparent;background:linear-gradient(90deg,#0b2531,#113c49);color:#d7fbff}
+    .btn.accent{border-color:transparent;background:linear-gradient(90deg,#0a3a2c,#0b553c)}
+    .btn.warn{border-color:transparent;background:linear-gradient(90deg,#402508,#5a320a)}
+    .btn.danger{border-color:transparent;background:linear-gradient(90deg,#3d0d0d,#5b1414)}
+    .btn.small{padding:9px 10px; border-radius:10px}
+
+    .inline-row{display:flex;gap:6px;align-items:center}
+    .inline-row input{min-width:210px}
+    .inline-row .btn{white-space:nowrap}
+
+    .card{
+      border:1px solid var(--border);
+      background:linear-gradient(180deg,rgba(17,24,39,.7),rgba(17,24,39,.5));
+      border-radius:18px;
+      overflow:hidden;
+      margin-bottom:14px
+    }
+    .card h2{
+      margin:0;
+      padding:14px 16px;
+      border-bottom:1px solid var(--border);
+      font-size:16px;
+      display:flex;
+      gap:10px;
+      align-items:center
+    }
+
+    .grid{overflow:auto;max-height:170vh}
+    table{border-collapse:separate;border-spacing:0;width:100%;min-width:1600px}
+    th,td{border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
+    th:last-child,td:last-child{border-right:none}
+    thead th{
+      position:sticky;
+      background:linear-gradient(180deg,rgba(17,24,39,.95),rgba(17,24,39,.8));
+      backdrop-filter:blur(8px);
+      z-index:5
+    }
+    thead tr:nth-child(1) th{top:0}
+    thead tr:nth-child(2) th{top:52px}
+    th{padding:10px 8px;text-align:center;font-weight:600;color:#cfe9ed}
+    td{padding:8px}
+    tbody tr:nth-child(even){background-color:rgba(255,255,255,0.02)}
+    .element-name{white-space:nowrap;font-weight:600;cursor:pointer;line-height:1.15}
+    .element-name .mini-note{
+      display:block;
+      font-size:10px;
+      font-weight:400;
+      opacity:.9;
+      margin-top:2px;
+    }
+
+    .cycle{display:flex;flex-direction:column;gap:8px;align-items:center;min-width:140px}
+    .stopwatch-group{display:flex;flex-direction:row;gap:4px;width:80px;flex-wrap:nowrap;justify-content:center;align-items:center}
+    .time-label{font-size:10px;color:#ff00ac;text-align:center;font-weight:600;transition:opacity .3s}
+    .time{
+      font-variant-numeric:tabular-nums;
+      letter-spacing:.4px;
+      background:var(--muted);
+      border:1px solid var(--border);
+      padding:4px 6px;
+      border-radius:6px;
+      min-width:100%;
+      text-align:center;
+      font-size:14px;
+      transition:border-color .3s, opacity .3s
+    }
+    .controls{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
+    .controls .mini{
+      font-size:12px;padding:5px 7px;border-radius:8px;border:1px solid transparent;cursor:pointer;
+      display:inline-flex;align-items:center;justify-content:center;line-height:1;font-weight:700;
+      transition:opacity .3s, box-shadow .3s, transform .2s;
+    }
+    .controls .mini.start-btn{background:#0b2531;color:#d7fbff;}
+    .controls .mini.stop-btn{background:#3a0b0b;color:var(--danger);}
+    .controls .mini.reset-btn{background:#f500002b;color:var(--sub);}
+    .controls .mini .icon{font-size:16px;}
+    .controls .mini:hover{opacity:0.9; transform:scale(1.05);}
+    .controls .mini:disabled{opacity:0.3;cursor:not-allowed;transform:none;}
+
+    .cycle-measure-box{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-width:135px;
+      padding:4px 2px;
+    }
+    .cycle-measure-box label{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      font-size:10px;
+      color:var(--sub);
+      text-align:left;
+    }
+    .cycle-measure-box input{
+      width:100%;
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:6px 8px;
+      color:var(--text);
+      font-size:12px;
+      text-align:center;
+      appearance:textfield;
+      -moz-appearance:textfield;
+    }
+    .cycle-measure-box input::-webkit-outer-spin-button,
+    .cycle-measure-box input::-webkit-inner-spin-button{
+      -webkit-appearance:none;
+      margin:0;
+    }
+    .cycle-measure-box input[readonly]{
+      background:rgba(255,255,255,0.05);
+      color:#dbeafe;
+      border-style:dashed;
+      cursor:default;
+    }
+    .cycle-measure-box input.duration-output{
+      color:#fde68a;
+      font-weight:700;
+    }
+
+    .footer-note{color:var(--sub);font-size:12px;margin-top:10px}
+
+    @media (max-width:900px){
+      .toolbar{flex-direction:column;align-items:flex-start}
+      .actions{margin-left:0}
+      .inline-row input{min-width:240px}
+      thead tr:nth-child(1) th{top:0}
+      thead tr:nth-child(2) th{top:52px}
+    }
+
+    .time.outlier{
+      border-color: rgba(248,113,113,.95) !important;
+      background: rgba(248,113,113,.14) !important;
+      box-shadow:0 0 0 2px rgba(248,113,113,.55), 0 0 18px rgba(248,113,113,.25) !important;
+    }
+    .time-label.outlier{
+      color: rgba(248,113,113,.95) !important;
+      text-shadow: 0 0 6px rgba(248,113,113,.45);
+    }
+
+    .modal-backdrop{
+      position:fixed; inset:0; background:rgba(0,0,0,.55);
+      display:none; align-items:center; justify-content:center; padding:24px; z-index:999;
+    }
+    .modal-backdrop.show{display:flex;}
+    .modal{
+      width:min(1200px, 96vw);
+      border:1px solid var(--border);
+      background:linear-gradient(180deg,rgba(17,24,39,.98),rgba(17,24,39,.85));
+      border-radius:18px; box-shadow:0 20px 80px rgba(0,0,0,.45);
+      overflow:hidden
+    }
+    .modal-header{display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid var(--border)}
+    .modal-title{font-size:16px;font-weight:800;letter-spacing:.2px;}
+    .modal-body{padding:16px;}
+    .modal-body input[type="text"]{
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 12px;
+      color:var(--text);
+      min-width:260px;
+    }
+    .badge{
+      display:inline-block; padding:2px 8px; border-radius:999px;
+      font-size:12px; border:1px solid var(--border);
+      background:rgba(255,255,255,0.04); color:var(--text);
+    }
+    .badge.danger{
+      border-color:rgba(248,113,113,.5);
+      background:rgba(248,113,113,.10);
+      color:#ffd5d5;
+    }
+    .small{font-size:12px;color:var(--sub);}
+
+    .plot-wrap{padding:12px 16px}
+    .plot-top{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:10px;}
+    .plot-top label{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--sub);}
+    .plot-top select{
+      background:var(--panel);border:1px solid var(--border);border-radius:10px;
+      padding:10px 12px;color:var(--text);min-width:280px
+    }
+    .plot-stats{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--sub);}
+    #boxplotSVG, #cycleBoxplotSVG{
+      width:100%;
+      height:220px;
+      display:block;
+      background:rgba(255,255,255,0.02);
+      border:1px solid var(--border);
+      border-radius:14px;
+      overflow:visible;
+    }
+  </style>
+</head>
+
+<body>
+<header>
+  <h1>Estudio de Tiempos - Tubo Liso</h1>
+  <div class="sub">
+    Secciones: <strong>Montaje, Producción y Desmontaje</strong>.
+    <span style="color:var(--warning)">⚠ IndexedDB activa. Puedes guardar muchos registros sin depender de una sola captura.</span>
+  </div>
+</header>
+
+<div class="container">
+  <div class="tabs" id="tabs"></div>
+
+  <div class="toolbar">
+    <label>
+      Operario compartido:
+      <input id="operatorInput" type="text" placeholder="Nombre" />
+    </label>
+
+    <label>
+      Diámetro compartido:
+      <select id="diameterInput">
+        <option value="">Seleccione...</option>
+        <option value="3/8">3/8"</option>
+        <option value="1/2">1/2"</option>
+        <option value="3/4">3/4"</option>
+        <option value="1">1"</option>
+        <option value="1 1/4">1 1/4"</option>
+        <option value="1 1/2">1 1/2"</option>
+        <option value="2">2"</option>
+        <option value="2 1/2">2 1/2"</option>
+        <option value="3">3"</option>
+        <option value="4">4"</option>
+        <option value="6">6"</option>
+        <option value="8">8"</option>
+        <option value="10">10"</option>
+        <option value="12">12"</option>
+      </select>
+    </label>
+
+    <div class="actions">
+      <button class="btn primary" id="exportJSON">Exportar JSON actual</button>
+      <button class="btn accent" id="exportXLSX">Exportar XLSX (actual)</button>
+      <button class="btn accent" id="snapshot">Guardar registro</button>
+      <button class="btn warn" id="newCapture">Nueva captura</button>
+      <button class="btn primary" id="historyBtn">Consultar historial</button>
+      <button class="btn warn" id="exportBulkJSON">Exportación masiva</button>
+      <button class="btn warn" id="analyzeOutliers">Analizar outliers</button>
+      <button class="btn danger" id="clearHistory">Borrar historial</button>
+    </div>
+
+    <span class="hint" id="storageInfo">
+      IndexedDB activa. Preparando base de datos...
+    </span>
+    <span class="hint">
+      Los datos compartidos por ciclo (medida inicio/final, inicio, fin y duración) aparecen en el encabezado de cada ciclo y se reflejan igual en las 3 secciones.
+    </span>
+  </div>
+
+  <div class="card">
+    <h2 id="tableTitle">Proceso</h2>
+    <div class="grid">
+      <table id="table"></table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Boxplot en vivo (por actividad) <span class="small">— vector (SVG) mientras tomas tiempos</span></h2>
+    <div class="plot-wrap">
+      <div class="plot-top">
+        <label>
+          Actividad (clic en la actividad o selecciona):
+          <select id="boxplotSelect"></select>
+        </label>
+
+        <div class="plot-stats" id="boxplotStats"></div>
+
+        <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+          <button class="btn accent" id="exportBoxplotPDF">Exportar Boxplot PDF (actividad)</button>
+        </div>
+      </div>
+
+      <svg id="boxplotSVG" viewBox="0 0 1200 240" preserveAspectRatio="none" aria-label="Boxplot en vivo por actividad"></svg>
+
+      <div class="footer-note" style="margin-top:10px">
+        * Boxplot por actividad: <strong>1.5·IQR</strong> y <strong>Tukey hinges</strong>.<br>
+        * Se ignora <strong>TE</strong>, ciclos con <strong>0</strong> y celdas en ejecución (running).<br>
+        * Unidad: <strong>minutos decimales</strong>.
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Boxplot en vivo (por ciclo total) <span class="small">— suma de actividades del ciclo, sin TE</span></h2>
+    <div class="plot-wrap">
+      <div class="plot-top">
+        <div class="plot-stats" id="cycleBoxplotStats"></div>
+
+        <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+          <button class="btn accent" id="exportCycleBoxplotPDF">Exportar Boxplot PDF (ciclo)</button>
+        </div>
+      </div>
+
+      <svg id="cycleBoxplotSVG" viewBox="0 0 1200 240" preserveAspectRatio="none" aria-label="Boxplot en vivo por ciclo"></svg>
+
+      <div class="footer-note" style="margin-top:10px">
+        * Aquí cada dato es el <strong>total del ciclo</strong> sumando todas las actividades, excepto <strong>TE</strong>.<br>
+        * Se comparan <strong>Ciclo 1, Ciclo 2, ... Ciclo 10</strong> en un solo boxplot.<br>
+        * Unidad: <strong>minutos decimales</strong>.
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    Nota: <strong>Solo la actividad "TE" contiene T1 y T2</strong>. Las demás actividades constan de un único cronómetro.
+    La interfaz muestra el tiempo en MM:SS.ms, pero la exportación a Excel se realiza en minutos con decimales.
+    <br>
+    <strong>Nueva captura</strong> limpia solo la captura actual. El historial guardado permanece intacto.
+  </div>
+</div>
+
+<div id="analysisBackdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <div class="modal-title">Análisis de datos erráticos (1.5·IQR)</div>
+      <button class="btn danger" id="closeAnalysis">Cerrar</button>
+    </div>
+    <div class="modal-body">
+      <div id="analysisMeta" class="small"></div>
+      <div class="grid" style="max-height:70vh; margin-top:10px;">
+        <table id="analysisTable"></table>
+      </div>
+      <div class="footer-note" style="margin-top:10px">
+        * Se ignora la actividad <strong>TE</strong> y los ciclos con tiempo 0 (sin registro).<br>
+        * Los cálculos están en <strong>minutos decimales</strong>.<br>
+        * Para evitar parpadeos, los ciclos “corriendo” no se consideran en el marcado automático.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="historyBackdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <div class="modal-title">Historial guardado</div>
+      <button class="btn danger" id="closeHistory">Cerrar</button>
+    </div>
+    <div class="modal-body">
+      <div class="plot-top">
+        <label>
+          Buscar:
+          <input id="historySearch" type="text" placeholder="Operario, sección, diámetro, fecha..." />
+        </label>
+        <div class="plot-stats" id="historyMeta"></div>
+      </div>
+
+      <div class="grid" style="max-height:70vh; margin-top:10px;">
+        <table id="historyTable"></table>
+      </div>
+
+      <div class="footer-note" style="margin-top:10px">
+        * “Cargar” reemplaza la captura actual en pantalla por el registro seleccionado.<br>
+        * “Borrar historial” no elimina la captura actual en pantalla.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const PROCESSES = {
+    'Montaje': [
+      'TE'
+    ],
+    'Producción': [
+      'Cortar tubo',
+      'Ajustar corte',
+      'Soporte tubo 1',
+      'Soporte tubo 2',
+      'Medir tubo 1',
+      'Soporte tubo 3',
+      'Medir tubo 2',
+      'Guardar tubo',
+      'Supervisar y alinear soldadura',
+      'Formar tubo liso',
+      'Cambiar gas',
+      'Ir por gas',
+      'TE'
+    ],
+    'Desmontaje': [
+      'TE'
+    ]
+  };
+
+  const CYCLES = 10;
+  const DB_NAME = 'tmf_tubo_liso_db_v1';
+  const DB_VERSION = 1;
+  const STORE_APP_STATE = 'app_state';
+  const STORE_RECORDS = 'records';
+  const APP_STATE_ID = 'current';
+  const LEGACY_LS_KEY = 'tmf_tubo_liso_v1_boxplot_doble';
+  const BOXPLOT_FONT_SCREEN = '"Times New Roman", Times, serif';
+  const BOXPLOT_FONT_PDF = 'times';
+
+  function defaultCellState(){
+    return {
+      chrono1: { ms:0, running:false, startedAt:null },
+      chrono2: { ms:0, running:false, startedAt:null }
+    };
+  }
+
+  function defaultCycleMeasure(){
+    return { start:'', end:'' };
+  }
+
+  function defaultCycleDateTime(){
+    return { startDateTime:'', endDateTime:'' };
+  }
+
+  function defaultSharedState(){
+    return {
+      operator: '',
+      diameter: '',
+      cycleMeasures: Array.from({length:CYCLES}, () => defaultCycleMeasure()),
+      cycleDateTimes: Array.from({length:CYCLES}, () => defaultCycleDateTime())
+    };
+  }
+
+  function defaultState(){
+    const data = { shared: defaultSharedState() };
+    for(const p of Object.keys(PROCESSES)){
+      data[p] = {
+        items: PROCESSES[p].map(() => Array.from({length:CYCLES}, () => defaultCellState()))
+      };
+    }
+    return data;
+  }
+
+  function normalizeDecimalString(value){
+    if(value === null || value === undefined) return '';
+    return String(value).replace(',', '.').trim();
+  }
+
+  function parseActivityMeta(value){
+    const [basePart, notePart = ''] = String(value || '').split('||');
+    return {
+      baseName: basePart.trim(),
+      note: notePart.trim()
+    };
+  }
+
+  function normalizeName(value){
+    const { baseName } = parseActivityMeta(value);
+    return String(baseName || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, ' ');
+  }
+
+  const ACTIVITY_SMALL_NOTES = {};
+
+  function getActivitySmallNote(name){
+    return ACTIVITY_SMALL_NOTES[normalizeName(name)] || '';
+  }
+
+  const ACTIVITY_NEON_STYLES = {
+    [normalizeName('Formar tubo liso')]: {
+      text: '#ff4d4d',
+      shadow: '0 0 6px #ff4d4d, 0 0 12px #ff4d4d, 0 0 22px rgba(255,77,77,.85)',
+      btnBg: 'linear-gradient(90deg,#4a0f0f,#7a1515)',
+      btnColor: '#fff5f5',
+      btnBorder: 'rgba(255,77,77,.92)',
+      btnShadow: '0 0 12px rgba(255,77,77,.34), inset 0 0 10px rgba(255,77,77,.10)'
+    },
+    [normalizeName('Supervisar y alinear soldadura')]: {
+      text: '#e066ff',
+      shadow: '0 0 6px #e066ff, 0 0 12px #e066ff, 0 0 22px rgba(224,102,255,.85)',
+      btnBg: 'linear-gradient(90deg,#38104a,#5e1890)',
+      btnColor: '#fcf5ff',
+      btnBorder: 'rgba(224,102,255,.92)',
+      btnShadow: '0 0 12px rgba(224,102,255,.34), inset 0 0 10px rgba(224,102,255,.10)'
+    },
+    [normalizeName('Cortar tubo')]: {
+      text: '#4dff4d',
+      shadow: '0 0 6px #4dff4d, 0 0 12px #4dff4d, 0 0 22px rgba(77,255,77,.85)',
+      btnBg: 'linear-gradient(90deg,#0f3f0f,#167116)',
+      btnColor: '#f3fff3',
+      btnBorder: 'rgba(77,255,77,.92)',
+      btnShadow: '0 0 12px rgba(77,255,77,.34), inset 0 0 10px rgba(77,255,77,.10)'
+    },
+    [normalizeName('TE')]: {
+      text: '#f0ff4d',
+      shadow: '0 0 6px #f0ff4d, 0 0 12px #f0ff4d, 0 0 22px rgba(240,255,77,.85)',
+      btnBg: 'linear-gradient(90deg,#4f5410,#717a15)',
+      btnColor: '#fffef0',
+      btnBorder: 'rgba(240,255,77,.92)',
+      btnShadow: '0 0 12px rgba(240,255,77,.34), inset 0 0 10px rgba(240,255,77,.10)'
+    }
+  };
+
+  function getActivityNeonStyle(name){
+    return ACTIVITY_NEON_STYLES[normalizeName(name)] || null;
+  }
+
+  function applyNeonTextStyle(el, neonStyle){
+    if(!el || !neonStyle) return;
+    el.style.color = neonStyle.text;
+    el.style.textShadow = neonStyle.shadow;
+  }
+
+  function applyNeonStartStyle(btn, neonStyle){
+    if(!btn || !neonStyle) return;
+    btn.style.background = neonStyle.btnBg;
+    btn.style.color = neonStyle.btnColor;
+    btn.style.border = `1px solid ${neonStyle.btnBorder}`;
+    btn.style.boxShadow = neonStyle.btnShadow;
+  }
+
+  function setActivityCellLabel(td, name){
+    const { baseName, note: inlineNote } = parseActivityMeta(name);
+    const note = inlineNote || getActivitySmallNote(baseName);
+    if(note){
+      td.innerHTML = `${baseName}<span class="mini-note">(${note})</span>`;
+    }else{
+      td.textContent = baseName;
+    }
+  }
+
+  function getActivityDisplayName(name){
+    const { baseName, note: inlineNote } = parseActivityMeta(name);
+    const note = inlineNote || getActivitySmallNote(baseName);
+    return note ? `${baseName} (${note})` : baseName;
+  }
+
+  function cloneJSON(obj){
+    return JSON.parse(JSON.stringify(obj));
+  }
+
+  function normalizeStateData(rawData){
+    try{
+      const source = rawData ? cloneJSON(rawData) : defaultState();
+      const normalized = defaultState();
+
+      const legacySeed = Object.keys(PROCESSES)
+        .map(p => source?.[p] || {})
+        .find(obj =>
+          obj.operator !== undefined ||
+          obj.diameter !== undefined ||
+          obj.startDateTime !== undefined ||
+          obj.endDateTime !== undefined ||
+          Array.isArray(obj.cycleMeasures)
+        ) || {};
+
+      const sharedSource = source?.shared || {};
+
+      normalized.shared.operator = sharedSource.operator ?? legacySeed.operator ?? '';
+      normalized.shared.diameter = sharedSource.diameter ?? legacySeed.diameter ?? '';
+
+      normalized.shared.cycleMeasures = Array.from({length:CYCLES}, (_, i) => ({
+        start: normalizeDecimalString(sharedSource.cycleMeasures?.[i]?.start ?? legacySeed.cycleMeasures?.[i]?.start ?? ''),
+        end: normalizeDecimalString(sharedSource.cycleMeasures?.[i]?.end ?? legacySeed.cycleMeasures?.[i]?.end ?? '')
+      }));
+
+      normalized.shared.cycleDateTimes = Array.from({length:CYCLES}, (_, i) => ({
+        startDateTime: sharedSource.cycleDateTimes?.[i]?.startDateTime || '',
+        endDateTime: sharedSource.cycleDateTimes?.[i]?.endDateTime || ''
+      }));
+
+      for (const p of Object.keys(PROCESSES)) {
+        const procSource = source?.[p] || {};
+
+        if (!Array.isArray(procSource.items)) {
+          normalized[p].items = defaultState()[p].items;
+        } else {
+          normalized[p].items = PROCESSES[p].map((_, rowIdx) => {
+            const existingRow = procSource.items[rowIdx];
+            if (!Array.isArray(existingRow)) {
+              return Array.from({length:CYCLES}, () => defaultCellState());
+            }
+            return Array.from({length:CYCLES}, (_, cycIdx) => {
+              const cell = existingRow[cycIdx];
+              return {
+                chrono1: {
+                  ms: Number(cell?.chrono1?.ms) || 0,
+                  running: !!cell?.chrono1?.running,
+                  startedAt: cell?.chrono1?.startedAt || null
+                },
+                chrono2: {
+                  ms: Number(cell?.chrono2?.ms) || 0,
+                  running: !!cell?.chrono2?.running,
+                  startedAt: cell?.chrono2?.startedAt || null
+                }
+              };
+            });
+          });
+        }
+      }
+
+      return normalized;
+    }catch(e){
+      return defaultState();
+    }
+  }
+
+  let dbPromise = null;
+
+  function openDB(){
+    if(dbPromise) return dbPromise;
+
+    dbPromise = new Promise((resolve, reject)=>{
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
+
+      req.onupgradeneeded = () => {
+        const db = req.result;
+
+        if(!db.objectStoreNames.contains(STORE_APP_STATE)){
+          db.createObjectStore(STORE_APP_STATE, { keyPath:'id' });
+        }
+
+        if(!db.objectStoreNames.contains(STORE_RECORDS)){
+          const store = db.createObjectStore(STORE_RECORDS, { keyPath:'id' });
+          store.createIndex('createdAt', 'createdAt', { unique:false });
+          store.createIndex('process', 'process', { unique:false });
+          store.createIndex('operator', 'operator', { unique:false });
+        }
+      };
+
+      req.onsuccess = ()=> resolve(req.result);
+      req.onerror = ()=> reject(req.error);
+    });
+
+    return dbPromise;
+  }
+
+  function txDone(tx){
+    return new Promise((resolve, reject)=>{
+      tx.oncomplete = ()=> resolve();
+      tx.onabort = ()=> reject(tx.error);
+      tx.onerror = ()=> reject(tx.error);
+    });
+  }
+
+  function reqToPromise(req){
+    return new Promise((resolve, reject)=>{
+      req.onsuccess = ()=> resolve(req.result);
+      req.onerror = ()=> reject(req.error);
+    });
+  }
+
+  async function idbGet(storeName, key){
+    const db = await openDB();
+    const tx = db.transaction(storeName, 'readonly');
+    const req = tx.objectStore(storeName).get(key);
+    const result = await reqToPromise(req);
+    await txDone(tx);
+    return result;
+  }
+
+  async function idbGetAll(storeName){
+    const db = await openDB();
+    const tx = db.transaction(storeName, 'readonly');
+    const req = tx.objectStore(storeName).getAll();
+    const result = await reqToPromise(req);
+    await txDone(tx);
+    return result;
+  }
+
+  async function idbPut(storeName, value){
+    const db = await openDB();
+    const tx = db.transaction(storeName, 'readwrite');
+    tx.objectStore(storeName).put(value);
+    await txDone(tx);
+  }
+
+  async function idbDelete(storeName, key){
+    const db = await openDB();
+    const tx = db.transaction(storeName, 'readwrite');
+    tx.objectStore(storeName).delete(key);
+    await txDone(tx);
+  }
+
+  async function idbClear(storeName){
+    const db = await openDB();
+    const tx = db.transaction(storeName, 'readwrite');
+    tx.objectStore(storeName).clear();
+    await txDone(tx);
+  }
+
+  async function migrateLegacyLocalStorageIfNeeded(){
+    try{
+      const raw = localStorage.getItem(LEGACY_LS_KEY);
+      if(!raw) return null;
+
+      const migrated = normalizeStateData(JSON.parse(raw));
+      await idbPut(STORE_APP_STATE, {
+        id: APP_STATE_ID,
+        updatedAt: new Date().toISOString(),
+        migratedFrom: 'localStorage',
+        data: cloneJSON(migrated)
+      });
+      return migrated;
+    }catch(err){
+      console.error('No se pudo migrar el localStorage legado:', err);
+      return null;
+    }
+  }
+
+  async function loadStateFromDB(){
+    try{
+      const saved = await idbGet(STORE_APP_STATE, APP_STATE_ID);
+      if(saved?.data) return normalizeStateData(saved.data);
+
+      const migrated = await migrateLegacyLocalStorageIfNeeded();
+      if(migrated) return migrated;
+
+      return defaultState();
+    }catch(err){
+      console.error('Error al leer IndexedDB:', err);
+      return defaultState();
+    }
+  }
+
+  let state = defaultState();
+  let saveTimer = null;
+  let saveChain = Promise.resolve();
+
+  function save(){
+    if(saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(()=>{ persistState(); }, 250);
+  }
+
+  async function persistState(){
+    const payload = {
+      id: APP_STATE_ID,
+      updatedAt: new Date().toISOString(),
+      data: cloneJSON(state)
+    };
+
+    saveChain = saveChain
+      .then(()=> idbPut(STORE_APP_STATE, payload))
+      .then(()=> updateStorageInfo())
+      .catch(err=> console.error('Error guardando estado:', err));
+
+    return saveChain;
+  }
+
+  function stopAllRunningTimers(sourceState){
+    for(const p of Object.keys(PROCESSES)){
+      PROCESSES[p].forEach((name,rowIdx)=>{
+        const chronos = name === 'TE' ? ['chrono1','chrono2'] : ['chrono1'];
+
+        for(let c=0;c<CYCLES;c++){
+          for(const chrono of chronos){
+            const cell = sourceState[p].items[rowIdx][c][chrono];
+            if(cell.running && cell.startedAt){
+              cell.ms = (Number(cell.ms) || 0) + Math.max(0, Date.now() - cell.startedAt);
+            }
+            cell.running = false;
+            cell.startedAt = null;
+          }
+        }
+      });
+    }
+  }
+
+  function buildFrozenStateSnapshot(sourceState = state){
+    const snap = normalizeStateData(sourceState);
+    stopAllRunningTimers(snap);
+    return snap;
+  }
+
+  function countRecordedEntries(sourceState){
+    let n = 0;
+
+    for(const p of Object.keys(PROCESSES)){
+      PROCESSES[p].forEach((name,rowIdx)=>{
+        const chronos = name === 'TE' ? ['chrono1','chrono2'] : ['chrono1'];
+
+        for(let c=0;c<CYCLES;c++){
+          for(const chrono of chronos){
+            const ms = Number(sourceState[p].items[rowIdx][c][chrono]?.ms) || 0;
+            if(ms > 0) n++;
+          }
+        }
+      });
+    }
+
+    return n;
+  }
+
+  function createRecordFromCurrentState(){
+    const snapshot = buildFrozenStateSnapshot(state);
+    const shared = getSharedData(snapshot);
+    const overallStart = getOverallStartDateTime(snapshot);
+    const overallEnd = getOverallEndDateTime(snapshot);
+
+    return {
+      id: `rec_${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
+      createdAt: new Date().toISOString(),
+      process: currentProcess,
+      operator: shared.operator || '',
+      diameter: shared.diameter || '',
+      startDateTime: overallStart || '',
+      endDateTime: overallEnd || '',
+      durationMinutes: computeDurationMinutes(overallStart, overallEnd) || '',
+      entries: countRecordedEntries(snapshot),
+      data: snapshot
+    };
+  }
+
+  let currentProcess = Object.keys(PROCESSES)[0];
+  const selectedBoxplotByProcess = {};
+
+  function msToMinutes(ms){ return (ms/60000).toFixed(10); }
+
+  function formatTime(ms) {
+    const minutes = String(Math.floor(ms / 60000)).padStart(2, '0');
+    const seconds = String(Math.floor((ms % 60000) / 1000)).padStart(2, '0');
+    const milliseconds = String(ms % 1000).padStart(3, '0');
+    return `${minutes}:${seconds}.${milliseconds}`;
+  }
+
+  function getCellAccumulatedMs(cell){
+    const elapsed = (cell.running && cell.startedAt) ? Math.max(0, Date.now() - cell.startedAt) : 0;
+    return (Number(cell.ms) || 0) + elapsed;
+  }
+
+  const tabsEl = document.getElementById('tabs');
+  const tableEl = document.getElementById('table');
+  const titleEl = document.getElementById('tableTitle');
+  const operatorInput = document.getElementById('operatorInput');
+  const diameterInput = document.getElementById('diameterInput');
+
+  function pad2(n){ return String(n).padStart(2,'0'); }
+  function nowLocalDateTimeValue(){
+    const d = new Date();
+    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+  }
+  function computeDurationMinutes(startStr, endStr){
+    if(!startStr || !endStr) return '';
+    const s = new Date(startStr);
+    const e = new Date(endStr);
+    if(isNaN(s.getTime()) || isNaN(e.getTime())) return '';
+    const diff = (e - s) / 60000;
+    if(!isFinite(diff) || diff < 0) return '';
+    return diff.toFixed(4);
+  }
+
+  const AUTO_START_PROCESS = 'Producción';
+  const AUTO_END_PROCESS = 'Producción';
+  const AUTO_START_ACTIVITY = normalizeName('Cortar tubo');
+  const AUTO_END_ACTIVITY = normalizeName('Formar tubo liso');
+
+  function getSharedData(sourceState = state){
+    if(!sourceState.shared) sourceState.shared = defaultSharedState();
+    return sourceState.shared;
+  }
+
+  function getCycleDurationMinutes(sourceState, cycleIdx){
+    const shared = getSharedData(sourceState);
+    const info = shared.cycleDateTimes?.[cycleIdx] || defaultCycleDateTime();
+    return computeDurationMinutes(info.startDateTime, info.endDateTime);
+  }
+
+  function getOverallStartDateTime(sourceState = state){
+    const shared = getSharedData(sourceState);
+    for(let i=0;i<CYCLES;i++){
+      if(shared.cycleDateTimes[i]?.startDateTime) return shared.cycleDateTimes[i].startDateTime;
+    }
+    return '';
+  }
+
+  function getOverallEndDateTime(sourceState = state){
+    const shared = getSharedData(sourceState);
+    for(let i=CYCLES-1;i>=0;i--){
+      if(shared.cycleDateTimes[i]?.endDateTime) return shared.cycleDateTimes[i].endDateTime;
+    }
+    return '';
+  }
+
+  function parseMaybeNumber(value){
+    const raw = normalizeDecimalString(value);
+    if(raw === '') return '';
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : raw;
+  }
+
+  function updateSharedCycleDom(cycleIdx){
+    const shared = getSharedData(state);
+    const measure = shared.cycleMeasures[cycleIdx] || defaultCycleMeasure();
+    const dateInfo = shared.cycleDateTimes[cycleIdx] || defaultCycleDateTime();
+    const duration = getCycleDurationMinutes(state, cycleIdx);
+
+    document.querySelectorAll(`[data-shared-kind="measure-start"][data-cyc="${cycleIdx}"]`)
+      .forEach(el => { el.value = normalizeDecimalString(measure.start || ''); });
+
+    document.querySelectorAll(`[data-shared-kind="measure-end"][data-cyc="${cycleIdx}"]`)
+      .forEach(el => { el.value = normalizeDecimalString(measure.end || ''); });
+
+    document.querySelectorAll(`[data-shared-kind="cycle-start-dt"][data-cyc="${cycleIdx}"]`)
+      .forEach(el => { el.value = dateInfo.startDateTime || ''; });
+
+    document.querySelectorAll(`[data-shared-kind="cycle-end-dt"][data-cyc="${cycleIdx}"]`)
+      .forEach(el => { el.value = dateInfo.endDateTime || ''; });
+
+    document.querySelectorAll(`[data-shared-kind="cycle-duration"][data-cyc="${cycleIdx}"]`)
+      .forEach(el => { el.value = duration || ''; });
+  }
+
+  function refreshAllSharedCycleDom(){
+    for(let i=0;i<CYCLES;i++) updateSharedCycleDom(i);
+  }
+
+  function syncSharedCycleMeasureField(cycleIdx, field, value){
+    const shared = getSharedData(state);
+    shared.cycleMeasures[cycleIdx][field] = normalizeDecimalString(value);
+    updateSharedCycleDom(cycleIdx);
+  }
+
+  function syncSharedCycleDateTimeField(cycleIdx, field, value){
+    const shared = getSharedData(state);
+    shared.cycleDateTimes[cycleIdx][field] = value || '';
+    updateSharedCycleDom(cycleIdx);
+  }
+
+  function cycleHasAnyTimeData(sourceState, cycleIdx){
+    for(const p of Object.keys(PROCESSES)){
+      PROCESSES[p].forEach((name, rowIdx)=>{
+        const chronos = name === 'TE' ? ['chrono1','chrono2'] : ['chrono1'];
+        for(const chrono of chronos){
+          const cell = sourceState[p]?.items?.[rowIdx]?.[cycleIdx]?.[chrono];
+          if(!cell) continue;
+          if((Number(cell.ms) || 0) > 0) return true;
+          if(cell.running && cell.startedAt) return true;
+        }
+      });
+    }
+    return false;
+  }
+
+  function maybeClearAutoDateTimesOnReset(proc, name, cyc, chronoType){
+    if(chronoType !== 'chrono1') return;
+
+    const normalizedName = normalizeName(name);
+
+    if(proc === AUTO_START_PROCESS && normalizedName === AUTO_START_ACTIVITY){
+      syncSharedCycleDateTimeField(cyc, 'startDateTime', '');
+      return;
+    }
+
+    if(proc === AUTO_END_PROCESS && normalizedName === AUTO_END_ACTIVITY){
+      syncSharedCycleDateTimeField(cyc, 'endDateTime', '');
+      return;
+    }
+  }
+
+  function maybeAutoSetStartDateTime(proc, name, cyc, chronoType){
+    if(chronoType !== 'chrono1') return;
+    if(proc !== AUTO_START_PROCESS) return;
+    if(normalizeName(name) !== AUTO_START_ACTIVITY) return;
+
+    const shared = getSharedData(state);
+    if(shared.cycleDateTimes[cyc]?.startDateTime) return;
+
+    syncSharedCycleDateTimeField(cyc, 'startDateTime', nowLocalDateTimeValue());
+  }
+
+  function maybeAutoSetEndDateTime(proc, name, cyc, chronoType){
+    if(chronoType !== 'chrono1') return;
+    if(proc !== AUTO_END_PROCESS) return;
+    if(normalizeName(name) !== AUTO_END_ACTIVITY) return;
+
+    syncSharedCycleDateTimeField(cyc, 'endDateTime', nowLocalDateTimeValue());
+  }
+
+  function mean(arr){
+    if(!arr.length) return NaN;
+    let s=0; for(const v of arr) s+=v;
+    return s/arr.length;
+  }
+  function sampleSd(arr){
+    const n = arr.length;
+    if(n < 2) return NaN;
+    const m = mean(arr);
+    let ss=0;
+    for(const v of arr) ss += (v-m)*(v-m);
+    return Math.sqrt(ss/(n-1));
+  }
+  function medianSorted(sorted){
+    const n = sorted.length;
+    if(n === 0) return NaN;
+    const mid = Math.floor(n/2);
+    return (n%2===1) ? sorted[mid] : (sorted[mid-1]+sorted[mid])/2;
+  }
+  function tukeyHinges(sorted){
+    const n = sorted.length;
+    if(n === 0) return {q1:NaN, q3:NaN};
+    const mid = Math.floor(n/2);
+    let lower, upper;
+    if(n%2===0){
+      lower = sorted.slice(0, mid);
+      upper = sorted.slice(mid);
+    }else{
+      lower = sorted.slice(0, mid+1);
+      upper = sorted.slice(mid);
+    }
+    return { q1: medianSorted(lower), q3: medianSorted(upper) };
+  }
+  function boxplotStats(values){
+    const sorted = [...values].sort((a,b)=>a-b);
+    const med = medianSorted(sorted);
+    const { q1, q3 } = tukeyHinges(sorted);
+    const iqr = q3 - q1;
+    const LI = q1 - 1.5*iqr;
+    const LS = q3 + 1.5*iqr;
+
+    let wLow = Infinity, wHigh = -Infinity;
+    const outliers = [];
+    for(const v of sorted){
+      if(v < LI || v > LS) outliers.push(v);
+      else { wLow = Math.min(wLow, v); wHigh = Math.max(wHigh, v); }
+    }
+    if(!Number.isFinite(wLow)) wLow = sorted[0];
+    if(!Number.isFinite(wHigh)) wHigh = sorted[sorted.length-1];
+
+    return { sorted, med, q1, q3, iqr, LI, LS, wLow, wHigh, outliers };
+  }
+  function fmt(x, digits=4){ return Number.isFinite(x) ? x.toFixed(digits) : '—'; }
+
+  const OUTLIER_KEYS = new Set();
+  const OUTLIER_INFO = new Map();
+  function oKey(proc,row,cyc){ return `${proc}__${row}__${cyc}`; }
+
+  function recomputeOutliersForProcess(proc){
+    OUTLIER_KEYS.clear();
+    OUTLIER_INFO.clear();
+
+    const pData = state[proc];
+
+    PROCESSES[proc].forEach((name,rowIdx)=>{
+      if(name === 'TE') return;
+
+      const vals = [];
+      const perCycle = [];
+
+      for(let c=0;c<CYCLES;c++){
+        const cell = pData.items[rowIdx][c].chrono1;
+        if(cell.running) continue;
+        const m = cell.ms / 60000;
+        if(m > 0){
+          vals.push(m);
+          perCycle.push({cyc:c, value:m});
+        }
+      }
+
+      if(vals.length < 2) return;
+
+      const st = boxplotStats(vals);
+      for(const it of perCycle){
+        if(it.value < st.LI || it.value > st.LS){
+          const k = oKey(proc,rowIdx,it.cyc);
+          OUTLIER_KEYS.add(k);
+          OUTLIER_INFO.set(k, { ...st, value: it.value });
+        }
+      }
+    });
+  }
+
+  function applyOutlierStyles(proc){
+    const nodes = document.querySelectorAll(`.time[data-proc="${proc}"][data-chrono="chrono1"]`);
+    nodes.forEach(el=>{
+      const row = Number(el.dataset.row);
+      const cyc = Number(el.dataset.cyc);
+      const k = oKey(proc,row,cyc);
+      const label = el.parentElement?.querySelector('.time-label');
+
+      if(OUTLIER_KEYS.has(k)){
+        const info = OUTLIER_INFO.get(k);
+        el.classList.add('outlier');
+        if(label) label.classList.add('outlier');
+        el.title =
+          `Dato errático (1.5·IQR)\n` +
+          `Valor: ${fmt(info.value)} min\n` +
+          `LI: ${fmt(info.LI)}  LS: ${fmt(info.LS)}\n` +
+          `Q1:${fmt(info.q1)}  Q3:${fmt(info.q3)}  IQR:${fmt(info.iqr)}`;
+      }else{
+        el.classList.remove('outlier');
+        if(label) label.classList.remove('outlier');
+        el.title = '';
+      }
+    });
+  }
+
+  function refreshOutliersUI(proc){
+    recomputeOutliersForProcess(proc);
+    applyOutlierStyles(proc);
+  }
+
+  const boxplotSelect = document.getElementById('boxplotSelect');
+  const boxplotStatsEl = document.getElementById('boxplotStats');
+  const boxplotSVG = document.getElementById('boxplotSVG');
+  const cycleBoxplotStatsEl = document.getElementById('cycleBoxplotStats');
+  const cycleBoxplotSVG = document.getElementById('cycleBoxplotSVG');
+  const SVG_NS = "http://www.w3.org/2000/svg";
+
+  function svgEl(tag, attrs = {}){
+    const el = document.createElementNS(SVG_NS, tag);
+    for(const [k,v] of Object.entries(attrs)) el.setAttribute(k, String(v));
+    return el;
+  }
+  function clearSVG(svg){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+  }
+
+  function getActivityMinutes(proc, rowIdx){
+    const pData = state[proc];
+    const vals = [];
+    for(let c=0;c<CYCLES;c++){
+      const cell = pData.items[rowIdx][c].chrono1;
+      if(cell.running) continue;
+      const m = cell.ms / 60000;
+      if(m > 0) vals.push(m);
+    }
+    return vals;
+  }
+
+  function getCycleTotalsDetailed(proc){
+    const pData = state[proc];
+    const details = [];
+
+    for(let c=0;c<CYCLES;c++){
+      let total = 0;
+      let hasData = false;
+
+      PROCESSES[proc].forEach((name,rowIdx)=>{
+        if(name === 'TE') return;
+        const cell = pData.items[rowIdx][c].chrono1;
+        if(cell.running) return;
+        const m = cell.ms / 60000;
+        if(m > 0){
+          total += m;
+          hasData = true;
+        }
+      });
+
+      if(hasData && total > 0){
+        details.push({ cycle:c+1, value:total });
+      }
+    }
+
+    return details;
+  }
+
+  function fillBoxplotSelect(){
+    const prevSelected = selectedBoxplotByProcess[currentProcess];
+    boxplotSelect.innerHTML = '';
+
+    PROCESSES[currentProcess].forEach((name, idx)=>{
+      if(name === 'TE') return;
+      const opt = document.createElement('option');
+      opt.value = String(idx);
+      opt.textContent = getActivityDisplayName(name);
+      boxplotSelect.appendChild(opt);
+    });
+
+    const exists = [...boxplotSelect.options].some(opt => opt.value === String(prevSelected));
+    if(exists){
+      boxplotSelect.value = String(prevSelected);
+    }else if(boxplotSelect.options.length){
+      boxplotSelect.value = boxplotSelect.options[0].value;
+      selectedBoxplotByProcess[currentProcess] = boxplotSelect.value;
+    }else{
+      boxplotSelect.value = '';
+    }
+  }
+
+  function setBoxplotSelectionByRow(rowIdx){
+    const name = PROCESSES[currentProcess][rowIdx];
+    if(name === 'TE') return;
+    boxplotSelect.value = String(rowIdx);
+    selectedBoxplotByProcess[currentProcess] = String(rowIdx);
+    drawBoxplotForSelected();
+  }
+
+  function drawBoxplotForSelected(){
+    clearSVG(boxplotSVG);
+    const selectedValue = boxplotSelect.value;
+    if(selectedValue === ''){
+      boxplotStatsEl.innerHTML = '';
+      return;
+    }
+
+    const rowIdx = Number(selectedValue);
+    const name = PROCESSES[currentProcess][rowIdx];
+    const vals = getActivityMinutes(currentProcess, rowIdx);
+
+    const title = svgEl('text', {
+      x: 18, y: 28, fill: '#e5e7eb', 'font-size': 16,
+      'font-family': BOXPLOT_FONT_SCREEN
+    });
+    title.textContent = `Sección: ${currentProcess} | Actividad: ${getActivityDisplayName(name)}`;
+    boxplotSVG.appendChild(title);
+
+    if(vals.length < 2){
+      boxplotStatsEl.innerHTML = `<span class="badge">n=${vals.length}</span>`;
+      const msg = svgEl('text', {
+        x: 18, y: 54, fill: '#9ca3af', 'font-size': 13,
+        'font-family': BOXPLOT_FONT_SCREEN
+      });
+      msg.textContent = `No hay suficientes datos (n=${vals.length}). Detén al menos 2 ciclos.`;
+      boxplotSVG.appendChild(msg);
+      return;
+    }
+
+    const st = boxplotStats(vals);
+    const m = mean(vals);
+    const sd = sampleSd(vals);
+
+    boxplotStatsEl.innerHTML = `
+      <span class="badge">n=${vals.length}</span>
+      <span class="badge">media=${fmt(m,4)}</span>
+      <span class="badge">s=${fmt(sd,4)}</span>
+      <span class="badge">Q1=${fmt(st.q1,4)}</span>
+      <span class="badge">mediana=${fmt(st.med,4)}</span>
+      <span class="badge">Q3=${fmt(st.q3,4)}</span>
+      <span class="badge">IQR=${fmt(st.iqr,4)}</span>
+      <span class="badge">LI=${fmt(st.LI,4)}</span>
+      <span class="badge">LS=${fmt(st.LS,4)}</span>
+      ${st.outliers.length ? `<span class="badge danger">outliers=${st.outliers.length}</span>` : `<span class="badge">sin outliers</span>`}
+    `;
+
+    const W = 1200, H = 240;
+    const left = 60, right = 40, top = 70, bottom = 40;
+    const axisY = Math.round((top + (H-bottom)) / 2);
+
+    const minV = Math.min(...st.sorted);
+    const maxV = Math.max(...st.sorted);
+    const pad = (maxV - minV) * 0.08 || (maxV*0.08) || 0.001;
+    const xMin = minV - pad;
+    const xMax = maxV + pad;
+    const denom = (xMax - xMin) || 1e-9;
+
+    function xScale(v){
+      return left + ((v - xMin)/denom) * (W - left - right);
+    }
+
+    boxplotSVG.appendChild(svgEl('line', {
+      x1: left, y1: axisY, x2: W-right, y2: axisY,
+      stroke: 'rgba(148,163,184,.35)', 'stroke-width': 2
+    }));
+
+    for(let i=0;i<=5;i++){
+      const t = xMin + (i/5)*(xMax-xMin);
+      const xt = xScale(t);
+
+      boxplotSVG.appendChild(svgEl('line', {
+        x1: xt, y1: axisY-35, x2: xt, y2: axisY+35,
+        stroke: 'rgba(148,163,184,.20)', 'stroke-width': 1
+      }));
+
+      const lab = svgEl('text', {
+        x: xt-18, y: axisY+55, fill: 'rgba(156,163,175,.9)', 'font-size': 12,
+        'font-family': BOXPLOT_FONT_SCREEN
+      });
+      lab.textContent = fmt(t,3);
+      boxplotSVG.appendChild(lab);
+    }
+
+    const xWL = xScale(st.wLow);
+    const xWH = xScale(st.wHigh);
+    boxplotSVG.appendChild(svgEl('line', { x1:xWL, y1:axisY, x2:xWH, y2:axisY, stroke:'rgba(226,232,240,.85)', 'stroke-width': 3 }));
+    boxplotSVG.appendChild(svgEl('line', { x1:xWL, y1:axisY-18, x2:xWL, y2:axisY+18, stroke:'rgba(226,232,240,.85)', 'stroke-width': 3 }));
+    boxplotSVG.appendChild(svgEl('line', { x1:xWH, y1:axisY-18, x2:xWH, y2:axisY+18, stroke:'rgba(226,232,240,.85)', 'stroke-width': 3 }));
+
+    const xQ1 = xScale(st.q1);
+    const xQ3 = xScale(st.q3);
+    const boxW = Math.max(2, xQ3-xQ1);
+    boxplotSVG.appendChild(svgEl('rect', {
+      x: xQ1, y: axisY-26, width: boxW, height: 52,
+      fill: 'rgba(34,211,238,.18)', stroke: 'rgba(34,211,238,.75)', 'stroke-width': 3
+    }));
+
+    const xMed = xScale(st.med);
+    boxplotSVG.appendChild(svgEl('line', { x1:xMed, y1:axisY-30, x2:xMed, y2:axisY+30, stroke:'rgba(226,232,240,.95)', 'stroke-width': 4 }));
+
+    if(st.outliers.length){
+      for(const v of st.outliers){
+        const xo = xScale(v);
+        boxplotSVG.appendChild(svgEl('circle', { cx:xo, cy:axisY, r:6, fill:'rgba(248,113,113,.95)' }));
+      }
+    }
+  }
+
+  function drawCycleBoxplot(){
+    clearSVG(cycleBoxplotSVG);
+
+    const totals = getCycleTotalsDetailed(currentProcess);
+    const vals = totals.map(x => x.value);
+
+    const title = svgEl('text', {
+      x: 18, y: 28, fill: '#e5e7eb', 'font-size': 16,
+      'font-family': BOXPLOT_FONT_SCREEN
+    });
+    title.textContent = `Sección: ${currentProcess} | Totales por ciclo (sin TE)`;
+    cycleBoxplotSVG.appendChild(title);
+
+    if(vals.length < 2){
+      cycleBoxplotStatsEl.innerHTML = `<span class="badge">n=${vals.length}</span>`;
+      const msg = svgEl('text', {
+        x: 18, y: 54, fill: '#9ca3af', 'font-size': 13,
+        'font-family': BOXPLOT_FONT_SCREEN
+      });
+      msg.textContent = `No hay suficientes ciclos con datos (n=${vals.length}).`;
+      cycleBoxplotSVG.appendChild(msg);
+      return;
+    }
+
+    const st = boxplotStats(vals);
+    const m = mean(vals);
+    const sd = sampleSd(vals);
+    const outs = totals.filter(v => v.value < st.LI || v.value > st.LS);
+
+    cycleBoxplotStatsEl.innerHTML = `
+      <span class="badge">n=${vals.length}</span>
+      <span class="badge">media=${fmt(m,4)}</span>
+      <span class="badge">s=${fmt(sd,4)}</span>
+      <span class="badge">Q1=${fmt(st.q1,4)}</span>
+      <span class="badge">mediana=${fmt(st.med,4)}</span>
+      <span class="badge">Q3=${fmt(st.q3,4)}</span>
+      <span class="badge">IQR=${fmt(st.iqr,4)}</span>
+      <span class="badge">LI=${fmt(st.LI,4)}</span>
+      <span class="badge">LS=${fmt(st.LS,4)}</span>
+      ${outs.length ? `<span class="badge danger">outliers=${outs.map(o=>`C${o.cycle}`).join(', ')}</span>` : `<span class="badge">sin outliers</span>`}
+    `;
+
+    const W = 1200, H = 240;
+    const left = 60, right = 40, top = 70, bottom = 40;
+    const axisY = Math.round((top + (H-bottom)) / 2);
+
+    const minV = Math.min(...st.sorted);
+    const maxV = Math.max(...st.sorted);
+    const pad = (maxV - minV) * 0.08 || (maxV*0.08) || 0.001;
+    const xMin = minV - pad;
+    const xMax = maxV + pad;
+    const denom = (xMax - xMin) || 1e-9;
+
+    function xScale(v){
+      return left + ((v - xMin)/denom) * (W - left - right);
+    }
+
+    cycleBoxplotSVG.appendChild(svgEl('line', {
+      x1: left, y1: axisY, x2: W-right, y2: axisY,
+      stroke: 'rgba(148,163,184,.35)', 'stroke-width': 2
+    }));
+
+    for(let i=0;i<=5;i++){
+      const t = xMin + (i/5)*(xMax-xMin);
+      const xt = xScale(t);
+
+      cycleBoxplotSVG.appendChild(svgEl('line', {
+        x1: xt, y1: axisY-35, x2: xt, y2: axisY+35,
+        stroke: 'rgba(148,163,184,.20)', 'stroke-width': 1
+      }));
+
+      const lab = svgEl('text', {
+        x: xt-18, y: axisY+55, fill: 'rgba(156,163,175,.9)', 'font-size': 12,
+        'font-family': BOXPLOT_FONT_SCREEN
+      });
+      lab.textContent = fmt(t,3);
+      cycleBoxplotSVG.appendChild(lab);
+    }
+
+    const xWL = xScale(st.wLow);
+    const xWH = xScale(st.wHigh);
+    cycleBoxplotSVG.appendChild(svgEl('line', { x1:xWL, y1:axisY, x2:xWH, y2:axisY, stroke:'rgba(226,232,240,.85)', 'stroke-width': 3 }));
+    cycleBoxplotSVG.appendChild(svgEl('line', { x1:xWL, y1:axisY-18, x2:xWL, y2:axisY+18, stroke:'rgba(226,232,240,.85)', 'stroke-width': 3 }));
+    cycleBoxplotSVG.appendChild(svgEl('line', { x1:xWH, y1:axisY-18, x2:xWH, y2:axisY+18, stroke:'rgba(226,232,240,.85)', 'stroke-width': 3 }));
+
+    const xQ1 = xScale(st.q1);
+    const xQ3 = xScale(st.q3);
+    const boxW = Math.max(2, xQ3-xQ1);
+    cycleBoxplotSVG.appendChild(svgEl('rect', {
+      x: xQ1, y: axisY-26, width: boxW, height: 52,
+      fill: 'rgba(34,211,238,.18)', stroke: 'rgba(34,211,238,.75)', 'stroke-width': 3
+    }));
+
+    const xMed = xScale(st.med);
+    cycleBoxplotSVG.appendChild(svgEl('line', { x1:xMed, y1:axisY-30, x2:xMed, y2:axisY+30, stroke:'rgba(226,232,240,.95)', 'stroke-width': 4 }));
+
+    totals.forEach((item, idx)=>{
+      const x = xScale(item.value);
+      const isOut = item.value < st.LI || item.value > st.LS;
+      const y = axisY + ((idx % 2 === 0) ? -18 : 18);
+
+      cycleBoxplotSVG.appendChild(svgEl('circle', {
+        cx:x, cy:y, r:5,
+        fill:isOut ? 'rgba(248,113,113,.95)' : 'rgba(34,211,238,.95)'
+      }));
+
+      const label = svgEl('text', {
+        x:x-10, y:y + (idx % 2 === 0 ? -10 : 16),
+        fill:isOut ? 'rgba(248,113,113,.95)' : 'rgba(203,213,225,.95)',
+        'font-size': 11,
+        'font-family': BOXPLOT_FONT_SCREEN
+      });
+      label.textContent = `C${item.cycle}`;
+      cycleBoxplotSVG.appendChild(label);
+    });
+  }
+
+  boxplotSelect.addEventListener('change', ()=>{
+    selectedBoxplotByProcess[currentProcess] = boxplotSelect.value;
+    drawBoxplotForSelected();
+  });
+
+  function updateLiveBoxplots(proc){
+    if(proc !== currentProcess) return;
+    drawBoxplotForSelected();
+    drawCycleBoxplot();
+  }
+
+  function sanitizeFilename(s){
+    return String(s)
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/[^a-zA-Z0-9_\-]+/g,'_')
+      .replace(/_+/g,'_')
+      .replace(/^_+|_+$/g,'')
+      .slice(0, 90) || 'boxplot';
+  }
+
+  function getSelectedBoxplotData(){
+    const rowIdx = Number(boxplotSelect.value);
+    const name = PROCESSES[currentProcess][rowIdx];
+    const vals = getActivityMinutes(currentProcess, rowIdx);
+
+    if(name === 'TE'){ alert('TE se ignora para boxplot.'); return null; }
+    if(vals.length < 2){ alert(`No hay suficientes datos para boxplot (n=${vals.length}). Detén al menos 2 ciclos.`); return null; }
+
+    const st = boxplotStats(vals);
+    const m = mean(vals);
+    const sd = sampleSd(vals);
+    return { proc: currentProcess, rowIdx, name, vals, st, m, sd };
+  }
+
+  function getCycleBoxplotData(){
+    const totals = getCycleTotalsDetailed(currentProcess);
+    const vals = totals.map(x => x.value);
+
+    if(vals.length < 2){
+      alert(`No hay suficientes ciclos con datos para boxplot (n=${vals.length}).`);
+      return null;
+    }
+
+    const st = boxplotStats(vals);
+    const m = mean(vals);
+    const sd = sampleSd(vals);
+    const outs = totals.filter(v => v.value < st.LI || v.value > st.LS);
+
+    return { proc: currentProcess, totals, vals, st, m, sd, outs };
+  }
+
+  function exportActivityBoxplotPDF(){
+    const d = getSelectedBoxplotData();
+    if(!d) return;
+
+    const { jsPDF } = window.jspdf || {};
+    if(!jsPDF){ alert('No se cargó jsPDF.'); return; }
+
+    const fnameBase = sanitizeFilename(`boxplot_${d.proc}_${d.name}_${ts()}`);
+    const pdf = new jsPDF({ orientation:'landscape', unit:'pt', format:'a4' });
+
+    const pageW = pdf.internal.pageSize.getWidth();
+    const margin = 36;
+
+    let y = margin;
+    pdf.setFont(BOXPLOT_FONT_PDF,'bold');
+    pdf.setFontSize(16);
+    pdf.setTextColor(229,231,235);
+    pdf.text(`Boxplot - ${d.proc} - ${getActivityDisplayName(d.name)}`, margin, y);
+    y += 18;
+
+    pdf.setFont(BOXPLOT_FONT_PDF,'normal');
+    pdf.setFontSize(10);
+    pdf.setTextColor(156,163,175);
+    pdf.text(`Fecha: ${new Date().toLocaleString()}  |  Unidad: minutos decimales  |  Criterio: 1.5·IQR`, margin, y);
+    y += 18;
+
+    const plotX = margin, plotY = y, plotW = pageW - 2*margin, plotH = 260;
+    const left = plotX + 60, right = plotX + plotW - 40, top = plotY + 40, bottom = plotY + plotH - 45;
+    const axisY = Math.round((top + bottom) / 2);
+
+    const st = d.st;
+    const minV = Math.min(...st.sorted), maxV = Math.max(...st.sorted);
+    const pad = (maxV - minV) * 0.08 || (maxV*0.08) || 0.001;
+    const xMin = minV - pad, xMax = maxV + pad;
+    const denom = (xMax - xMin) || 1e-9;
+
+    function xScale(v){ return left + ((v - xMin) / denom) * (right - left); }
+
+    pdf.setDrawColor(55,65,81);
+    pdf.setLineWidth(1);
+    pdf.roundedRect(plotX, plotY, plotW, plotH, 10, 10);
+    pdf.setDrawColor(148,163,184);
+    pdf.setLineWidth(2);
+    pdf.line(left, axisY, right, axisY);
+
+    pdf.setFont(BOXPLOT_FONT_PDF,'normal');
+    pdf.setFontSize(9);
+    for(let i=0;i<=5;i++){
+      const t = xMin + (i/5)*(xMax - xMin);
+      const xt = xScale(t);
+      pdf.setDrawColor(148,163,184);
+      pdf.setLineWidth(0.6);
+      pdf.setLineDashPattern([3,4], 0);
+      pdf.line(xt, top, xt, bottom);
+      pdf.setLineDashPattern([], 0);
+      pdf.setTextColor(156,163,175);
+      pdf.text(t.toFixed(3), xt - 16, bottom + 18);
+    }
+
+    const xWL = xScale(st.wLow), xWH = xScale(st.wHigh);
+    const xQ1 = xScale(st.q1), xQ3 = xScale(st.q3), xMed = xScale(st.med);
+
+    pdf.setDrawColor(226,232,240);
+    pdf.setLineWidth(2.5);
+    pdf.line(xWL, axisY, xWH, axisY);
+    pdf.line(xWL, axisY-16, xWL, axisY+16);
+    pdf.line(xWH, axisY-16, xWH, axisY+16);
+
+    const boxH = 52;
+    const boxW = Math.max(2, xQ3 - xQ1);
+    const hasGState = typeof pdf.GState === 'function' && typeof pdf.setGState === 'function';
+    if(hasGState){ pdf.setGState(new pdf.GState({ opacity: 0.18, strokeOpacity: 1 })); }
+    pdf.setFillColor(34,211,238);
+    pdf.setDrawColor(34,211,238);
+    pdf.setLineWidth(2.2);
+    pdf.rect(xQ1, axisY - boxH/2, boxW, boxH, 'FD');
+    if(hasGState){ pdf.setGState(new pdf.GState({ opacity: 1, strokeOpacity: 1 })); }
+
+    pdf.setDrawColor(226,232,240);
+    pdf.setLineWidth(3);
+    pdf.line(xMed, axisY - boxH/2 - 4, xMed, axisY + boxH/2 + 4);
+
+    if(st.outliers && st.outliers.length){
+      pdf.setDrawColor(248,113,113);
+      pdf.setFillColor(248,113,113);
+      pdf.setLineWidth(1.2);
+      for(const v of st.outliers){ pdf.circle(xScale(v), axisY, 4.5, 'FD'); }
+    }
+
+    pdf.save(`${fnameBase}.pdf`);
+  }
+
+  function exportCycleBoxplotPDF(){
+    const d = getCycleBoxplotData();
+    if(!d) return;
+
+    const { jsPDF } = window.jspdf || {};
+    if(!jsPDF){ alert('No se cargó jsPDF.'); return; }
+
+    const fnameBase = sanitizeFilename(`boxplot_ciclos_${d.proc}_${ts()}`);
+    const pdf = new jsPDF({ orientation:'landscape', unit:'pt', format:'a4' });
+
+    const pageW = pdf.internal.pageSize.getWidth();
+    const margin = 36;
+
+    let y = margin;
+    pdf.setFont(BOXPLOT_FONT_PDF,'bold');
+    pdf.setFontSize(16);
+    pdf.setTextColor(229,231,235);
+    pdf.text(`Boxplot por ciclo - ${d.proc} (sin TE)`, margin, y);
+    y += 18;
+
+    pdf.setFont(BOXPLOT_FONT_PDF,'normal');
+    pdf.setFontSize(10);
+    pdf.setTextColor(156,163,175);
+    pdf.text(`Fecha: ${new Date().toLocaleString()}  |  Unidad: minutos decimales  |  Criterio: 1.5·IQR`, margin, y);
+    y += 18;
+
+    const plotX = margin, plotY = y, plotW = pageW - 2*margin, plotH = 260;
+    const left = plotX + 60, right = plotX + plotW - 40, top = plotY + 40, bottom = plotY + plotH - 45;
+    const axisY = Math.round((top + bottom) / 2);
+
+    const st = d.st;
+    const minV = Math.min(...st.sorted), maxV = Math.max(...st.sorted);
+    const pad = (maxV - minV) * 0.08 || (maxV*0.08) || 0.001;
+    const xMin = minV - pad, xMax = maxV + pad;
+    const denom = (xMax - xMin) || 1e-9;
+
+    function xScale(v){ return left + ((v - xMin) / denom) * (right - left); }
+
+    pdf.setDrawColor(55,65,81);
+    pdf.setLineWidth(1);
+    pdf.roundedRect(plotX, plotY, plotW, plotH, 10, 10);
+    pdf.setDrawColor(148,163,184);
+    pdf.setLineWidth(2);
+    pdf.line(left, axisY, right, axisY);
+
+    pdf.setFont(BOXPLOT_FONT_PDF,'normal');
+    pdf.setFontSize(9);
+    for(let i=0;i<=5;i++){
+      const t = xMin + (i/5)*(xMax - xMin);
+      const xt = xScale(t);
+      pdf.setDrawColor(148,163,184);
+      pdf.setLineWidth(0.6);
+      pdf.setLineDashPattern([3,4], 0);
+      pdf.line(xt, top, xt, bottom);
+      pdf.setLineDashPattern([], 0);
+      pdf.setTextColor(156,163,175);
+      pdf.text(t.toFixed(3), xt - 16, bottom + 18);
+    }
+
+    const xWL = xScale(st.wLow), xWH = xScale(st.wHigh);
+    const xQ1 = xScale(st.q1), xQ3 = xScale(st.q3), xMed = xScale(st.med);
+
+    pdf.setDrawColor(226,232,240);
+    pdf.setLineWidth(2.5);
+    pdf.line(xWL, axisY, xWH, axisY);
+    pdf.line(xWL, axisY-16, xWL, axisY+16);
+    pdf.line(xWH, axisY-16, xWH, axisY+16);
+
+    const boxH = 52;
+    const boxW = Math.max(2, xQ3 - xQ1);
+    const hasGState = typeof pdf.GState === 'function' && typeof pdf.setGState === 'function';
+    if(hasGState){ pdf.setGState(new pdf.GState({ opacity: 0.18, strokeOpacity: 1 })); }
+    pdf.setFillColor(34,211,238);
+    pdf.setDrawColor(34,211,238);
+    pdf.setLineWidth(2.2);
+    pdf.rect(xQ1, axisY - boxH/2, boxW, boxH, 'FD');
+    if(hasGState){ pdf.setGState(new pdf.GState({ opacity: 1, strokeOpacity: 1 })); }
+
+    pdf.setDrawColor(226,232,240);
+    pdf.setLineWidth(3);
+    pdf.line(xMed, axisY - boxH/2 - 4, xMed, axisY + boxH/2 + 4);
+
+    d.totals.forEach((item, idx)=>{
+      const isOutlier = item.value < st.LI || item.value > st.LS;
+      const x = xScale(item.value);
+      const yPoint = axisY + ((idx % 2 === 0) ? -18 : 18);
+
+      if(isOutlier){
+        pdf.setDrawColor(248,113,113);
+        pdf.setFillColor(248,113,113);
+      }else{
+        pdf.setDrawColor(34,211,238);
+        pdf.setFillColor(34,211,238);
+      }
+      pdf.circle(x, yPoint, 4.5, 'FD');
+
+      pdf.setTextColor(isOutlier ? 248 : 203, isOutlier ? 113 : 213, isOutlier ? 113 : 225);
+      pdf.text(`C${item.cycle}`, x - 10, yPoint + (idx % 2 === 0 ? -8 : 14));
+    });
+
+    pdf.save(`${fnameBase}.pdf`);
+  }
+
+  document.getElementById('exportBoxplotPDF').onclick = exportActivityBoxplotPDF;
+  document.getElementById('exportCycleBoxplotPDF').onclick = exportCycleBoxplotPDF;
+
+  const analysisBackdrop = document.getElementById('analysisBackdrop');
+  const analysisTable = document.getElementById('analysisTable');
+  const analysisMeta = document.getElementById('analysisMeta');
+  const closeAnalysisBtn = document.getElementById('closeAnalysis');
+
+  const storageInfo = document.getElementById('storageInfo');
+  const historyBackdrop = document.getElementById('historyBackdrop');
+  const historyTable = document.getElementById('historyTable');
+  const historyMeta = document.getElementById('historyMeta');
+  const historySearch = document.getElementById('historySearch');
+  const closeHistoryBtn = document.getElementById('closeHistory');
+
+  let historyCache = [];
+
+  function formatHumanDate(value){
+    if(!value) return '—';
+    const d = new Date(value);
+    return isNaN(d.getTime()) ? value : d.toLocaleString('es-MX');
+  }
+
+  async function updateStorageInfo(){
+    if(!storageInfo) return;
+
+    try{
+      const records = await idbGetAll(STORE_RECORDS);
+      const currentBytes = new Blob([JSON.stringify(buildFrozenStateSnapshot(state))]).size;
+      storageInfo.textContent =
+        `IndexedDB activa | historial: ${records.length} registro(s) | captura actual: ${(currentBytes/1024).toFixed(1)} KB`;
+    }catch(err){
+      storageInfo.textContent = 'IndexedDB activa';
+    }
+  }
+
+  function openHistory(){
+    historyBackdrop.classList.add('show');
+    historyBackdrop.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeHistory(){
+    historyBackdrop.classList.remove('show');
+    historyBackdrop.setAttribute('aria-hidden', 'true');
+  }
+
+  closeHistoryBtn.onclick = closeHistory;
+  historyBackdrop.addEventListener('click', (e)=>{
+    if(e.target === historyBackdrop) closeHistory();
+  });
+
+  function renderHistoryTable(){
+    const q = normalizeName(historySearch.value || '');
+
+    const filtered = historyCache.filter(r=>{
+      const text = normalizeName(
+        `${r.process || ''} ${r.operator || ''} ${r.diameter || ''} ${r.createdAt || ''} ${r.startDateTime || ''} ${r.endDateTime || ''}`
+      );
+      return !q || text.includes(q);
+    });
+
+    historyMeta.innerHTML = `
+      <span class="badge">total=${historyCache.length}</span>
+      <span class="badge">mostrados=${filtered.length}</span>
+    `;
+
+    const thead = `
+      <thead>
+        <tr>
+          <th>Fecha guardado</th>
+          <th>Sección</th>
+          <th>Operario</th>
+          <th>Diámetro</th>
+          <th>Inicio</th>
+          <th>Fin</th>
+          <th>Entradas</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+    `;
+
+    const body = filtered.length
+      ? filtered.map(r=>`
+        <tr>
+          <td>${formatHumanDate(r.createdAt)}</td>
+          <td>${r.process || '—'}</td>
+          <td>${r.operator || '—'}</td>
+          <td>${r.diameter || '—'}</td>
+          <td>${formatHumanDate(r.startDateTime)}</td>
+          <td>${formatHumanDate(r.endDateTime)}</td>
+          <td style="text-align:center;">${r.entries ?? 0}</td>
+          <td>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center">
+              <button class="btn small primary" data-action="load" data-id="${r.id}">Cargar</button>
+              <button class="btn small danger" data-action="delete" data-id="${r.id}">Eliminar</button>
+            </div>
+          </td>
+        </tr>
+      `).join('')
+      : `
+        <tr>
+          <td colspan="8" style="text-align:center;color:var(--sub);padding:18px;">
+            No hay registros guardados.
+          </td>
+        </tr>
+      `;
+
+    historyTable.innerHTML = thead + `<tbody>${body}</tbody>`;
+  }
+
+  async function refreshHistoryModal(){
+    historyCache = await idbGetAll(STORE_RECORDS);
+    historyCache.sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
+    renderHistoryTable();
+    await updateStorageInfo();
+  }
+
+  historySearch.addEventListener('input', renderHistoryTable);
+
+  historyTable.addEventListener('click', async (e)=>{
+    const btn = e.target.closest('button[data-action]');
+    if(!btn) return;
+
+    const id = btn.dataset.id;
+    const action = btn.dataset.action;
+    const record = historyCache.find(r => r.id === id);
+    if(!record) return;
+
+    if(action === 'load'){
+      if(!confirm('Esto reemplazará la captura actual mostrada en pantalla.')) return;
+      state = normalizeStateData(record.data);
+      await persistState();
+      renderAll();
+      closeHistory();
+      return;
+    }
+
+    if(action === 'delete'){
+      if(!confirm('¿Eliminar este registro del historial?')) return;
+      await idbDelete(STORE_RECORDS, id);
+      await refreshHistoryModal();
+    }
+  });
+
+  function openAnalysis(){ analysisBackdrop.classList.add('show'); analysisBackdrop.setAttribute('aria-hidden','false'); }
+  function closeAnalysis(){ analysisBackdrop.classList.remove('show'); analysisBackdrop.setAttribute('aria-hidden','true'); }
+  closeAnalysisBtn.onclick = closeAnalysis;
+  analysisBackdrop.addEventListener('click', (e)=>{ if(e.target === analysisBackdrop) closeAnalysis(); });
+
+  function renderAnalysis(rows){
+    const thead = `
+      <thead>
+        <tr>
+          <th>Actividad</th>
+          <th>n</th>
+          <th>Media</th>
+          <th>s</th>
+          <th>Q1</th>
+          <th>Q3</th>
+          <th>IQR</th>
+          <th>LI</th>
+          <th>LS</th>
+          <th>Outliers</th>
+          <th>Media (sin outliers)</th>
+          <th>s (sin outliers)</th>
+        </tr>
+      </thead>
+    `;
+
+    const tbodyRows = rows.map(r=>{
+      const outTxt = (r.outliers && r.outliers.length)
+        ? `<span class="badge danger">${r.outliers.map(o=>`C${o.cycle}:${fmt(o.value,4)}`).join(' | ')}</span>`
+        : `<span class="badge">Sin outliers</span>`;
+      const note = r.note ? `<div class="small">${r.note}</div>` : '';
+      return `
+        <tr>
+          <td class="element-name" style="position:sticky;left:0;background:rgba(17,24,39,.85);backdrop-filter:blur(6px);">${getActivityDisplayName(r.name)}${note}</td>
+          <td style="text-align:center;">${r.n ?? 0}</td>
+          <td style="text-align:right;">${fmt(r.mean)}</td>
+          <td style="text-align:right;">${fmt(r.sd)}</td>
+          <td style="text-align:right;">${fmt(r.q1)}</td>
+          <td style="text-align:right;">${fmt(r.q3)}</td>
+          <td style="text-align:right;">${fmt(r.iqr)}</td>
+          <td style="text-align:right;">${fmt(r.LI)}</td>
+          <td style="text-align:right;">${fmt(r.LS)}</td>
+          <td>${outTxt}</td>
+          <td style="text-align:right;">${fmt(r.meanNo)}</td>
+          <td style="text-align:right;">${fmt(r.sdNo)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    analysisTable.innerHTML = thead + `<tbody>${tbodyRows}</tbody>`;
+  }
+
+  function renderTabs(){
+    tabsEl.innerHTML = '';
+    for(const p of Object.keys(PROCESSES)){
+      const b = document.createElement('button');
+      b.className='tab';
+      b.textContent=p;
+      b.setAttribute('aria-selected', p === currentProcess);
+      b.onclick = ()=>{ currentProcess = p; renderAll(); };
+      tabsEl.appendChild(b);
+    }
+  }
+
+  const intervals = new Map();
+  function keyOf(proc,row,cyc,chrono){ return `${proc}__${row}__${cyc}__${chrono}`; }
+
+  function startTicker(proc,row,cyc,chrono,paint,resumeIfLost=false){
+    const k = keyOf(proc,row,cyc,chrono);
+    if(intervals.has(k)) clearInterval(intervals.get(k));
+    const cellRef = state[proc].items[row][cyc][chrono];
+    if(resumeIfLost && cellRef.running && !cellRef.startedAt) cellRef.startedAt = Date.now();
+    const id = setInterval(paint, 53);
+    intervals.set(k, id);
+  }
+  function stopTicker(proc,row,cyc,chrono){
+    const k = keyOf(proc,row,cyc,chrono);
+    if(intervals.has(k)){ clearInterval(intervals.get(k)); intervals.delete(k); }
+  }
+
+  function buildCycleCell(proc,row,cyc,name){
+    const wrap = document.createElement('div');
+    wrap.className='cycle';
+
+    const neonStyle = getActivityNeonStyle(name);
+
+    function buildStopwatch(chronoType,labelText,colorStyle){
+      const group = document.createElement('div');
+      group.className='stopwatch-group';
+
+      const label = document.createElement('div');
+      label.className='time-label';
+      label.textContent=labelText;
+      label.style.color=colorStyle;
+
+      const t = document.createElement('div');
+      t.className='time';
+      t.dataset.proc = proc;
+      t.dataset.row = String(row);
+      t.dataset.cyc = String(cyc);
+      t.dataset.chrono = chronoType;
+
+      const cellRef = state[proc].items[row][cyc][chronoType];
+
+      function paint(){
+        const ms = getCellAccumulatedMs(cellRef);
+        t.textContent = formatTime(ms);
+        t.style.borderColor = ms > 0
+          ? (chronoType==='chrono1' ? '#ff00ac' : '#ead100')
+          : (chronoType==='chrono1' ? 'var(--accent)' : 'var(--accent-2)');
+      }
+      paint();
+
+      const controls = document.createElement('div');
+      controls.className='controls';
+
+      const start = document.createElement('button'); start.className='mini start-btn'; start.innerHTML='<span class="icon">&#9658;</span>';
+      const stop = document.createElement('button'); stop.className='mini stop-btn'; stop.innerHTML='<span class="icon">&#9724;</span>';
+      const resume = document.createElement('button'); resume.className='mini start-btn'; resume.innerHTML='<span class="icon">&#9199;</span>';
+      const reset = document.createElement('button'); reset.className='mini reset-btn'; reset.innerHTML='<span class="icon">&#128465;</span>';
+
+      if(neonStyle){
+        applyNeonStartStyle(start, neonStyle);
+        applyNeonStartStyle(resume, neonStyle);
+      }
+
+      function updateButtonVisibility(){
+        if(cellRef.running){
+          start.style.display='none'; resume.style.display='none';
+          stop.style.display='inline-flex'; reset.style.display='none';
+        }else{
+          stop.style.display='none'; reset.style.display='inline-flex';
+          if(cellRef.ms === 0){ start.style.display='inline-flex'; resume.style.display='none'; }
+          else { start.style.display='none'; resume.style.display='inline-flex'; }
+        }
+      }
+
+      start.onclick = ()=>{
+        cellRef.startedAt = Date.now();
+        cellRef.running = true;
+        maybeAutoSetStartDateTime(proc, name, cyc, chronoType);
+        startTicker(proc,row,cyc,chronoType,paint);
+        save();
+        updateButtonVisibility();
+      };
+
+      stop.onclick = ()=>{
+        const elapsed = (cellRef.startedAt ? Math.max(0, Date.now() - cellRef.startedAt) : 0);
+        cellRef.ms += elapsed;
+        cellRef.startedAt = null;
+        cellRef.running = false;
+        maybeAutoSetEndDateTime(proc, name, cyc, chronoType);
+        stopTicker(proc,row,cyc,chronoType);
+        paint();
+        save();
+        updateButtonVisibility();
+
+        refreshOutliersUI(proc);
+        if(name !== 'TE' && chronoType === 'chrono1') updateLiveBoxplots(proc);
+      };
+
+      resume.onclick = ()=>{
+        cellRef.startedAt = Date.now();
+        cellRef.running = true;
+        startTicker(proc,row,cyc,chronoType,paint);
+        save();
+        updateButtonVisibility();
+      };
+
+      reset.onclick = ()=>{
+        cellRef.ms = 0;
+        cellRef.startedAt = null;
+        cellRef.running = false;
+        stopTicker(proc,row,cyc,chronoType);
+        maybeClearAutoDateTimesOnReset(proc, name, cyc, chronoType);
+        paint();
+        save();
+        updateButtonVisibility();
+
+        refreshOutliersUI(proc);
+        if(name !== 'TE' && chronoType === 'chrono1') updateLiveBoxplots(proc);
+      };
+
+      controls.append(start, stop, resume, reset);
+      group.append(label, t, controls);
+
+      updateButtonVisibility();
+      if(cellRef.running) startTicker(proc,row,cyc,chronoType,paint,true);
+
+      return group;
+    }
+
+    if(name === 'TE'){
+      wrap.appendChild(buildStopwatch('chrono1','T1','var(--accent)'));
+      wrap.appendChild(buildStopwatch('chrono2','T2','var(--accent-2)'));
+    }else{
+      wrap.appendChild(buildStopwatch('chrono1','T','var(--accent)'));
+    }
+
+    return wrap;
+  }
+
+  function buildCycleMeasureHeader(cycleIdx){
+    const box = document.createElement('div');
+    box.className = 'cycle-measure-box';
+
+    const shared = getSharedData(state);
+
+    const startLabel = document.createElement('label');
+    startLabel.textContent = 'Medida Inicio';
+    const startInput = document.createElement('input');
+    startInput.type = 'number';
+    startInput.step = 'any';
+    startInput.inputMode = 'decimal';
+    startInput.placeholder = '0.00';
+    startInput.dataset.sharedKind = 'measure-start';
+    startInput.dataset.cyc = String(cycleIdx);
+    startInput.value = normalizeDecimalString(shared.cycleMeasures[cycleIdx]?.start || '');
+    startInput.addEventListener('input', (e)=>{
+      syncSharedCycleMeasureField(cycleIdx, 'start', e.target.value);
+      save();
+    });
+    startLabel.appendChild(startInput);
+
+    const endLabel = document.createElement('label');
+    endLabel.textContent = 'Medida Final';
+    const endInput = document.createElement('input');
+    endInput.type = 'number';
+    endInput.step = 'any';
+    endInput.inputMode = 'decimal';
+    endInput.placeholder = '0.00';
+    endInput.dataset.sharedKind = 'measure-end';
+    endInput.dataset.cyc = String(cycleIdx);
+    endInput.value = normalizeDecimalString(shared.cycleMeasures[cycleIdx]?.end || '');
+    endInput.addEventListener('input', (e)=>{
+      syncSharedCycleMeasureField(cycleIdx, 'end', e.target.value);
+      save();
+    });
+    endLabel.appendChild(endInput);
+
+    const dtStartLabel = document.createElement('label');
+    dtStartLabel.textContent = 'Inicio';
+    const dtStartInput = document.createElement('input');
+    dtStartInput.type = 'datetime-local';
+    dtStartInput.readOnly = true;
+    dtStartInput.dataset.sharedKind = 'cycle-start-dt';
+    dtStartInput.dataset.cyc = String(cycleIdx);
+    dtStartInput.value = shared.cycleDateTimes[cycleIdx]?.startDateTime || '';
+    dtStartLabel.appendChild(dtStartInput);
+
+    const dtEndLabel = document.createElement('label');
+    dtEndLabel.textContent = 'Fin';
+    const dtEndInput = document.createElement('input');
+    dtEndInput.type = 'datetime-local';
+    dtEndInput.readOnly = true;
+    dtEndInput.dataset.sharedKind = 'cycle-end-dt';
+    dtEndInput.dataset.cyc = String(cycleIdx);
+    dtEndInput.value = shared.cycleDateTimes[cycleIdx]?.endDateTime || '';
+    dtEndLabel.appendChild(dtEndInput);
+
+    const durationLabel = document.createElement('label');
+    durationLabel.textContent = 'Duración (min)';
+    const durationInput = document.createElement('input');
+    durationInput.type = 'text';
+    durationInput.readOnly = true;
+    durationInput.className = 'duration-output';
+    durationInput.dataset.sharedKind = 'cycle-duration';
+    durationInput.dataset.cyc = String(cycleIdx);
+    durationInput.value = getCycleDurationMinutes(state, cycleIdx) || '';
+    durationLabel.appendChild(durationInput);
+
+    box.appendChild(startLabel);
+    box.appendChild(endLabel);
+    box.appendChild(dtStartLabel);
+    box.appendChild(dtEndLabel);
+    box.appendChild(durationLabel);
+
+    return box;
+  }
+
+  function renderTable(){
+    titleEl.textContent = `Sección: ${currentProcess}`;
+    const shared = getSharedData(state);
+
+    operatorInput.value = shared.operator || '';
+    diameterInput.value = shared.diameter || '';
+
+    const thead = document.createElement('thead');
+
+    const trh1 = document.createElement('tr');
+    const thName = document.createElement('th');
+    thName.textContent='Actividad';
+    thName.style.position='sticky';
+    thName.style.left='0';
+    thName.style.zIndex='7';
+    thName.style.background='linear-gradient(180deg,rgba(17,24,39,.95),rgba(17,24,39,.8))';
+    trh1.appendChild(thName);
+
+    for(let c=1;c<=CYCLES;c++){
+      const th = document.createElement('th');
+      th.textContent = `Ciclo ${c}`;
+      trh1.appendChild(th);
+    }
+    thead.appendChild(trh1);
+
+    const trh2 = document.createElement('tr');
+    const thMeasuresTitle = document.createElement('th');
+    thMeasuresTitle.textContent = 'Medidas por ciclo';
+    thMeasuresTitle.style.position='sticky';
+    thMeasuresTitle.style.left='0';
+    thMeasuresTitle.style.zIndex='7';
+    thMeasuresTitle.style.background='linear-gradient(180deg,rgba(17,24,39,.95),rgba(17,24,39,.8))';
+    trh2.appendChild(thMeasuresTitle);
+
+    for(let c=0;c<CYCLES;c++){
+      const th = document.createElement('th');
+      th.appendChild(buildCycleMeasureHeader(c));
+      trh2.appendChild(th);
+    }
+    thead.appendChild(trh2);
+
+    const tbody = document.createElement('tbody');
+    PROCESSES[currentProcess].forEach((name,rowIdx)=>{
+      const tr = document.createElement('tr');
+      const tdName = document.createElement('td');
+      tdName.className='element-name';
+      setActivityCellLabel(tdName, name);
+      tdName.style.position='sticky';
+      tdName.style.left='0';
+      tdName.style.background='rgba(17,24,39,.6)';
+      tdName.style.backdropFilter='blur(6px)';
+      tdName.onclick = ()=> setBoxplotSelectionByRow(rowIdx);
+
+      const neonStyle = getActivityNeonStyle(name);
+
+      if (neonStyle) {
+        applyNeonTextStyle(tdName, neonStyle);
+      }
+      if (name === 'TE') {
+        tdName.onclick = ()=>{};
+      }
+
+      tr.appendChild(tdName);
+
+      for(let c=0;c<CYCLES;c++){
+        const td = document.createElement('td');
+        td.appendChild(buildCycleCell(currentProcess,rowIdx,c,name));
+        tr.appendChild(td);
+      }
+
+      tbody.appendChild(tr);
+    });
+
+    tableEl.innerHTML='';
+    tableEl.appendChild(thead);
+    tableEl.appendChild(tbody);
+  }
+
+  function renderAll(){
+    for(const id of intervals.values()) clearInterval(id);
+    intervals.clear();
+
+    renderTabs();
+    renderTable();
+    refreshAllSharedCycleDom();
+    fillBoxplotSelect();
+    drawBoxplotForSelected();
+    drawCycleBoxplot();
+    refreshOutliersUI(currentProcess);
+  }
+
+  function bindSharedInput(el, field){
+    const handler = (e)=>{
+      getSharedData(state)[field] = e.target.value;
+      save();
+    };
+    el.addEventListener('input', handler);
+    el.addEventListener('change', handler);
+  }
+
+  bindSharedInput(operatorInput, 'operator');
+  bindSharedInput(diameterInput, 'diameter');
+
+  document.getElementById('exportJSON').onclick = ()=>{
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      currentState: buildFrozenStateSnapshot(state)
+    };
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type:'application/json'
+    });
+
+    downloadBlob(blob, `estudio_tubo_liso_actual_${ts()}.json`);
+  };
+
+  document.getElementById('exportXLSX').onclick = async ()=>{
+    try{
+      const wb = new ExcelJS.Workbook();
+      const exportState = buildFrozenStateSnapshot(state);
+      const shared = getSharedData(exportState);
+      const overallStart = getOverallStartDateTime(exportState);
+      const overallEnd = getOverallEndDateTime(exportState);
+      const overallDuration = computeDurationMinutes(overallStart, overallEnd);
+
+      wb.creator = 'ChatGPT';
+      wb.created = new Date();
+      wb.modified = new Date();
+
+      const palette = {
+        titleFill: 'FFB8E0D2',
+        titleText: 'FF355C52',
+        labelFill: 'FFD7EAF8',
+        valueFill: 'FFF7FBFF',
+        sectionFill: 'FFE8DFF8',
+        sectionText: 'FF5A4B7A',
+        subHeaderFill: 'FFFBE4E6',
+        subHeaderText: 'FF8A5A65',
+        cycleHeaderFill: 'FFFFF1D6',
+        cycleHeaderText: 'FF8C6A3D',
+        activityHeaderFill: 'FFDFF4EA',
+        activityHeaderText: 'FF4F7B67',
+        dataBlue: 'FFF4F9FE',
+        dataMint: 'FFF2FBF7',
+        dataPeach: 'FFFFF7EF',
+        dataLavender: 'FFF7F3FD',
+        dataRose: 'FFFFF4F6',
+        dataGray: 'FFFCFCFD',
+        border: 'FFD7CBDD'
+      };
+
+      function rgba(rgb){
+        return { argb: rgb };
+      }
+
+      function fill(color){
+        return { type:'pattern', pattern:'solid', fgColor: rgba(color) };
+      }
+
+      function borderAll(){
+        return {
+          top:{style:'thin', color:rgba(palette.border)},
+          left:{style:'thin', color:rgba(palette.border)},
+          bottom:{style:'thin', color:rgba(palette.border)},
+          right:{style:'thin', color:rgba(palette.border)}
+        };
+      }
+
+      function styleCell(cell, cfg = {}){
+        cell.font = cfg.font || cell.font || { name:'Calibri', size:11, color:rgba('FF4B5563') };
+        cell.fill = cfg.fill || cell.fill;
+        cell.alignment = cfg.alignment || cell.alignment || { vertical:'middle', horizontal:'center', wrapText:true };
+        cell.border = cfg.border || cell.border || borderAll();
+        if(cfg.numFmt) cell.numFmt = cfg.numFmt;
+      }
+
+      for(const p of Object.keys(PROCESSES)){
+        const ws = wb.addWorksheet(p);
+        const pData = exportState[p];
+        ws.views = [{state:'frozen', xSplit:1, ySplit:13}];
+        ws.columns = [{width:30}, ...Array.from({length:CYCLES}, () => ({width:19}))];
+
+        ws.mergeCells(1,1,1,11);
+        const titleCell = ws.getCell('A1');
+        titleCell.value = `Sección: ${p}`;
+        styleCell(titleCell, {
+          font:{name:'Calibri', size:16, bold:true, color:rgba(palette.titleText)},
+          fill:fill(palette.titleFill),
+          alignment:{vertical:'middle', horizontal:'center'}
+        });
+        ws.getRow(1).height = 26;
+
+        ws.getCell('A3').value = 'Operario';
+        ws.getCell('B3').value = shared.operator || '';
+        ws.getCell('C3').value = 'Diámetro';
+        ws.getCell('D3').value = shared.diameter || '';
+
+        ['A3','C3'].forEach(addr => styleCell(ws.getCell(addr), {
+          font:{bold:true, color:rgba(palette.titleText)},
+          fill:fill(palette.labelFill)
+        }));
+        ['B3','D3'].forEach(addr => styleCell(ws.getCell(addr), {
+          fill:fill(palette.valueFill)
+        }));
+
+        ws.mergeCells(5,1,5,11);
+        const sharedTitle = ws.getCell('A5');
+        sharedTitle.value = 'Medidas por ciclo';
+        styleCell(sharedTitle, {
+          font:{bold:true, size:13, color:rgba(palette.sectionText)},
+          fill:fill(palette.sectionFill)
+        });
+
+        const cycleHeader = ['Concepto', ...Array.from({length:CYCLES}, (_,i)=>`Ciclo ${i+1}`)];
+        ws.getRow(6).values = cycleHeader;
+        ws.getRow(7).values = ['Medida Inicio', ...shared.cycleMeasures.map(m => parseMaybeNumber(m.start || ''))];
+        ws.getRow(8).values = ['Medida Final', ...shared.cycleMeasures.map(m => parseMaybeNumber(m.end || ''))];
+        ws.getRow(9).values = ['Inicio (fecha-hora)', ...shared.cycleDateTimes.map(info => info.startDateTime || '')];
+        ws.getRow(10).values = ['Fin (fecha-hora)', ...shared.cycleDateTimes.map(info => info.endDateTime || '')];
+        ws.getRow(11).values = ['Duración total (min)', ...Array.from({length:CYCLES}, (_,i)=>{
+          const d = getCycleDurationMinutes(exportState, i);
+          return d === '' ? '' : Number(d);
+        })];
+
+        ws.getRow(13).values = ['Actividad', ...Array.from({length:CYCLES}, (_,i)=>`Ciclo ${i+1} (min)`)];
+
+        const dataStartRow = 14;
+        let currentRow = dataStartRow;
+
+        PROCESSES[p].forEach((name,rowIdx)=>{
+          const chronosToExport = name === 'TE' ? ['chrono1','chrono2'] : ['chrono1'];
+
+          chronosToExport.forEach(cType=>{
+            let rowLabel = getActivityDisplayName(name);
+            if(name === 'TE'){
+              rowLabel = `${name} (${cType === 'chrono1' ? 'T1' : 'T2'})`;
+            }
+
+            const rowValues = [rowLabel];
+            for(let i=0;i<CYCLES;i++){
+              const cell = pData.items[rowIdx][i][cType];
+              const ms = Number(cell.ms) || 0;
+              rowValues.push(Number(msToMinutes(ms)));
+            }
+            ws.getRow(currentRow).values = rowValues;
+            currentRow++;
+          });
+        });
+
+        for(let c=1;c<=11;c++){
+          styleCell(ws.getRow(6).getCell(c), {
+            font:{bold:true, color:rgba(palette.cycleHeaderText)},
+            fill:fill(palette.cycleHeaderFill)
+          });
+          styleCell(ws.getRow(13).getCell(c), {
+            font:{bold:true, color:rgba(palette.activityHeaderText)},
+            fill:fill(palette.activityHeaderFill)
+          });
+        }
+
+        const sharedRowStyles = {
+          7: { fillColor: palette.dataBlue, numFmt:'0.0000' },
+          8: { fillColor: palette.dataMint, numFmt:'0.0000' },
+          9: { fillColor: palette.dataPeach },
+          10:{ fillColor: palette.dataRose },
+          11:{ fillColor: palette.dataLavender, numFmt:'0.0000' }
+        };
+
+        Object.entries(sharedRowStyles).forEach(([rowNumber, cfg])=>{
+          const rIdx = Number(rowNumber);
+          for(let c=1;c<=11;c++){
+            styleCell(ws.getRow(rIdx).getCell(c), {
+              fill:fill(cfg.fillColor),
+              numFmt: c > 1 ? cfg.numFmt : undefined
+            });
+          }
+          ws.getRow(rIdx).getCell(1).font = {bold:true, color:rgba('FF5F4B32')};
+        });
+
+        for(let r=3;r<currentRow;r++){
+          for(let c=1;c<=11;c++){
+            const cell = ws.getRow(r).getCell(c);
+            if(!cell.border) cell.border = borderAll();
+            if(!cell.alignment) cell.alignment = { vertical:'middle', horizontal:'center', wrapText:true };
+          }
+        }
+
+        for(let r=dataStartRow;r<currentRow;r++){
+          const isTE = String(ws.getRow(r).getCell(1).value || '').startsWith('TE');
+          let baseFill = r % 2 === 0 ? palette.dataGray : palette.valueFill;
+          if(isTE) baseFill = palette.dataPeach;
+
+          for(let c=1;c<=11;c++){
+            styleCell(ws.getRow(r).getCell(c), {
+              fill:fill(baseFill),
+              numFmt: c > 1 ? '0.0000000000' : undefined
+            });
+          }
+          ws.getRow(r).getCell(1).font = {bold:true, color:rgba('FF4B5563')};
+          ws.getRow(r).height = 20;
+        }
+
+        ws.getColumn(1).alignment = { vertical:'middle', horizontal:'left', wrapText:true };
+        ws.autoFilter = { from: { row:13, column:1 }, to: { row:13, column:11 } };
+      }
+
+      const buffer = await wb.xlsx.writeBuffer();
+      downloadBlob(
+        new Blob([buffer], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),
+        `tubo_liso_actual_${ts()}.xlsx`
+      );
+    }catch(err){
+      console.error(err);
+      alert('No se pudo generar el archivo XLSX con formato.');
+    }
+  };
+
+  document.getElementById('snapshot').onclick = async ()=>{
+    try{
+      const record = createRecordFromCurrentState();
+      await idbPut(STORE_RECORDS, record);
+      await updateStorageInfo();
+
+      alert(
+        'Registro guardado en IndexedDB.\n\n' +
+        `Sección: ${record.process}\n` +
+        `Operario: ${record.operator || '—'}\n` +
+        `Diámetro: ${record.diameter || '—'}\n` +
+        `Entradas: ${record.entries}`
+      );
+    }catch(err){
+      console.error(err);
+      alert('No se pudo guardar el registro.');
+    }
+  };
+
+  document.getElementById('newCapture').onclick = async ()=>{
+    const hasCurrentData = countRecordedEntries(buildFrozenStateSnapshot(state)) > 0;
+
+    if(hasCurrentData){
+      const shouldSave = confirm(
+        'Antes de limpiar la captura actual, ¿quieres guardar este registro en el historial?\n\n' +
+        'Aceptar = guardar y luego limpiar\n' +
+        'Cancelar = limpiar sin guardar'
+      );
+
+      if(shouldSave){
+        try{
+          const record = createRecordFromCurrentState();
+          await idbPut(STORE_RECORDS, record);
+        }catch(err){
+          console.error(err);
+          alert('No se pudo guardar el registro antes de limpiar.');
+          return;
+        }
+      }
+    }
+
+    state = defaultState();
+    await persistState();
+    renderAll();
+    await updateStorageInfo();
+
+    alert('La captura actual fue limpiada. El historial guardado permanece intacto.');
+  };
+
+  document.getElementById('historyBtn').onclick = async ()=>{
+    try{
+      await refreshHistoryModal();
+      openHistory();
+    }catch(err){
+      console.error(err);
+      alert('No se pudo abrir el historial.');
+    }
+  };
+
+  document.getElementById('exportBulkJSON').onclick = async ()=>{
+    try{
+      const records = await idbGetAll(STORE_RECORDS);
+      records.sort((a,b)=> new Date(a.createdAt) - new Date(b.createdAt));
+
+      const payload = {
+        app: 'Estudio de Tiempos - Tubo Liso',
+        version: 4,
+        exportedAt: new Date().toISOString(),
+        totalRecords: records.length,
+        currentState: buildFrozenStateSnapshot(state),
+        records
+      };
+
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {
+        type:'application/json'
+      });
+
+      downloadBlob(blob, `exportacion_masiva_tubo_liso_${ts()}.json`);
+    }catch(err){
+      console.error(err);
+      alert('No se pudo generar la exportación masiva.');
+    }
+  };
+
+  document.getElementById('clearHistory').onclick = async ()=>{
+    if(!confirm('¿Eliminar todos los registros guardados del historial? La captura actual en pantalla NO se borrará.')) return;
+
+    try{
+      await idbClear(STORE_RECORDS);
+      await updateStorageInfo();
+      alert('Historial eliminado. La captura actual sigue disponible.');
+    }catch(err){
+      console.error(err);
+      alert('No se pudo borrar el historial.');
+    }
+  };
+
+  document.getElementById('analyzeOutliers').onclick = ()=>{
+    const p = currentProcess;
+    const pData = state[p];
+    const rows = [];
+
+    PROCESSES[p].forEach((name,rowIdx)=>{
+      if(name === 'TE') return;
+
+      const vals = [];
+      const perCycle = [];
+
+      for(let c=0;c<CYCLES;c++){
+        const cell = pData.items[rowIdx][c].chrono1;
+        if(cell.running) continue;
+        const m = cell.ms / 60000;
+        if(m > 0){
+          vals.push(m);
+          perCycle.push({ cycle:c+1, value:m });
+        }
+      }
+
+      if(vals.length === 0){
+        rows.push({ name, n:0, note:'Sin datos', outliers:[] });
+        return;
+      }
+
+      const note = (vals.length < 4) ? 'Pocos datos (n<4): el IQR puede ser poco estable' : '';
+      const st = boxplotStats(vals);
+      const outs = perCycle.filter(v => v.value < st.LI || v.value > st.LS);
+
+      const meanAll = mean(vals);
+      const sdAll = sampleSd(vals);
+
+      const valsNo = perCycle
+        .filter(v => !(v.value < st.LI || v.value > st.LS))
+        .map(v => v.value);
+
+      const meanNo = valsNo.length ? mean(valsNo) : NaN;
+      const sdNo = valsNo.length ? sampleSd(valsNo) : NaN;
+
+      rows.push({
+        name,
+        n: vals.length,
+        mean: meanAll,
+        sd: sdAll,
+        q1: st.q1,
+        q3: st.q3,
+        iqr: st.iqr,
+        LI: st.LI,
+        LS: st.LS,
+        outliers: outs,
+        meanNo,
+        sdNo,
+        note
+      });
+    });
+
+    analysisMeta.textContent = `Sección: ${p} | Criterio: 1.5·IQR | Datos: minutos decimales | TE ignorado`;
+    renderAnalysis(rows);
+    openAnalysis();
+
+    refreshOutliersUI(currentProcess);
+    drawBoxplotForSelected();
+    drawCycleBoxplot();
+  };
+
+  function downloadBlob(blob, filename){
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  }
+
+  function ts(){
+    const d = new Date();
+    return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}`;
+  }
+
+  window.addEventListener('beforeunload', (e)=>{
+    e.preventDefault();
+    e.returnValue='';
+  });
+
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.hidden){
+      persistState();
+    }
+  });
+
+  async function initApp(){
+    try{
+      await openDB();
+      state = await loadStateFromDB();
+      renderAll();
+      await updateStorageInfo();
+    }catch(err){
+      console.error(err);
+      alert('No se pudo iniciar IndexedDB. Se cargará el estado por defecto.');
+      state = defaultState();
+      renderAll();
+    }
+  }
+
+  initApp();
+</script>
+</body>
+</html>
