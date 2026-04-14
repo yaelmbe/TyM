@@ -34,8 +34,8 @@
 
     .card{
       width:100%;
-      max-width:760px;
-      background:rgba(17,24,39,.95);
+      max-width:780px;
+      background:rgba(17,24,39,.96);
       border:1px solid var(--border);
       border-radius:18px;
       padding:24px;
@@ -208,7 +208,7 @@
       margin-top:18px;
       color:var(--muted);
       font-size:12px;
-      line-height:1.5;
+      line-height:1.6;
     }
 
     .loading{
@@ -241,8 +241,8 @@
   <div class="card">
     <h1>Subir archivo XLSX</h1>
     <p class="sub">
-      Esta página envía un archivo <strong>.xlsx</strong> a tu Web App de Google Apps Script,
-      que luego lo guarda en Google Drive y devuelve una respuesta JSON.
+      Esta página envía un archivo <strong>.xlsx</strong> desde GitHub Pages hacia tu Web App de Google Apps Script,
+      que luego lo guarda en Google Drive y responde con JSON.
     </p>
 
     <div class="grid">
@@ -284,27 +284,21 @@
     <pre id="jsonBox" class="json-box"></pre>
 
     <div class="footer-note">
-      Antes de usarlo, reemplaza en el script:
-      <br />
-      <strong>https://yaelmbe.github.io/TyM/</strong> por la URL de tu Web App
-      <br />
-      <strong>1-sRtchfXHz-9CTw9KUE4VRPdztkEeayv</strong> por el mismo token que pusiste en Apps Script
+      GitHub Pages: https://yaelmbe.github.io/TyM/<br>
+      Web App conectada y token cargado.
     </div>
   </div>
 
   <script>
-    // =========================================================
-    // CONFIGURACIÓN
-    // =========================================================
-    const WEB_APP_URL = "https://yaelmbe.github.io/TyM/";
-    const API_TOKEN = "1-sRtchfXHz-9CTw9KUE4VRPdztkEeayv";
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzJ5GN6SN2rkNTxzyuZUcKW1ZxLowgkLm8lOhy590kuIm2toJc-ZOqixe-Rtw_jbA4ODg/exec";
+    const API_TOKEN = "TyM_2026_Upload_XLSX_9qLr7MzP";
+
+    const SITE_URL = "https://yaelmbe.github.io/TyM/";
+    const SITE_ORIGIN = "https://yaelmbe.github.io";
 
     const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     const MAX_FILE_SIZE_MB = 25;
 
-    // =========================================================
-    // ELEMENTOS
-    // =========================================================
     const dropzone = document.getElementById("dropzone");
     const fileInput = document.getElementById("fileInput");
     const fileMeta = document.getElementById("fileMeta");
@@ -317,9 +311,6 @@
 
     let selectedFile = null;
 
-    // =========================================================
-    // EVENTOS DE UI
-    // =========================================================
     dropzone.addEventListener("click", () => fileInput.click());
 
     fileInput.addEventListener("change", (e) => {
@@ -350,9 +341,6 @@
     clearBtn.addEventListener("click", clearForm);
     uploadBtn.addEventListener("click", uploadFile);
 
-    // =========================================================
-    // FUNCIONES PRINCIPALES
-    // =========================================================
     function setSelectedFile(file) {
       hideStatus();
       hideJson();
@@ -388,16 +376,6 @@
       hideStatus();
       hideJson();
 
-      if (!WEB_APP_URL || WEB_APP_URL.includes("https://yaelmbe.github.io/TyM/")) {
-        showStatus("Debes configurar WEB_APP_URL en el HTML.", "error");
-        return;
-      }
-
-      if (!API_TOKEN || API_TOKEN.includes("1-sRtchfXHz-9CTw9KUE4VRPdztkEeayv")) {
-        showStatus("Debes configurar API_TOKEN en el HTML.", "error");
-        return;
-      }
-
       if (!selectedFile) {
         showStatus("Selecciona un archivo .xlsx antes de subir.", "warn");
         return;
@@ -424,7 +402,11 @@
           fileName: finalFileName,
           mimeType: selectedFile.type || XLSX_MIME,
           fileBase64: fileBase64,
-          source: window.location.origin,
+          siteUrl: SITE_URL,
+          siteOrigin: SITE_ORIGIN,
+          pageHref: window.location.href,
+          pageOrigin: window.location.origin,
+          pagePath: window.location.pathname,
           uploadedAtClient: new Date().toISOString()
         };
 
@@ -448,7 +430,7 @@
 
         if (data.ok) {
           showStatus(
-            `✅ Subida exitosa\n\nArchivo guardado: ${data.fileName}\nTipo: ${data.tubeType}\nFile ID: ${data.fileId || "N/A"}`,
+            `✅ Subida exitosa\n\nArchivo guardado: ${data.fileName}\nTipo: ${data.tubeType}\nID: ${data.fileId || "N/A"}`,
             "ok"
           );
         } else {
@@ -459,6 +441,7 @@
         }
 
         showJson(data);
+
       } catch (error) {
         showStatus(`❌ Error al subir el archivo\n\n${error.message || error}`, "error");
       } finally {
@@ -476,9 +459,6 @@
       hideJson();
     }
 
-    // =========================================================
-    // UTILIDADES
-    // =========================================================
     function fileToBase64(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
