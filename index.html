@@ -286,9 +286,9 @@
     <div class="footer-note">
       Antes de usarlo, reemplaza en el script:
       <br />
-      <strong>WEB_APP_URL</strong> por la URL de tu Web App
+      <strong>https://yaelmbe.github.io/TyM/</strong> por la URL de tu Web App
       <br />
-      <strong>API_TOKEN</strong> por el mismo token que pusiste en Apps Script
+      <strong>1-sRtchfXHz-9CTw9KUE4VRPdztkEeayv</strong> por el mismo token que pusiste en Apps Script
     </div>
   </div>
 
@@ -296,8 +296,8 @@
     // =========================================================
     // CONFIGURACIÓN
     // =========================================================
-    const WEB_APP_URL = "PEGA_AQUI_LA_URL_DE_TU_WEB_APP";
-    const API_TOKEN = "PEGA_AQUI_TU_TOKEN";
+    const WEB_APP_URL = "https://yaelmbe.github.io/TyM/";
+    const API_TOKEN = "1-sRtchfXHz-9CTw9KUE4VRPdztkEeayv";
 
     const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     const MAX_FILE_SIZE_MB = 25;
@@ -388,12 +388,12 @@
       hideStatus();
       hideJson();
 
-      if (!WEB_APP_URL || WEB_APP_URL.includes("PEGA_AQUI")) {
+      if (!WEB_APP_URL || WEB_APP_URL.includes("https://yaelmbe.github.io/TyM/")) {
         showStatus("Debes configurar WEB_APP_URL en el HTML.", "error");
         return;
       }
 
-      if (!API_TOKEN || API_TOKEN.includes("PEGA_AQUI")) {
+      if (!API_TOKEN || API_TOKEN.includes("1-sRtchfXHz-9CTw9KUE4VRPdztkEeayv")) {
         showStatus("Debes configurar API_TOKEN en el HTML.", "error");
         return;
       }
