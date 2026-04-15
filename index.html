@@ -370,11 +370,9 @@
     </label>
 
     <div class="actions">
-	<button class="btn primary" id="uploadToDrive" style="background: linear-gradient(90deg,#1e40af,#3b82f6);">
-  	☁️ Subir a Drive
-	</button>
       <button class="btn primary" id="exportJSON">Exportar JSON actual</button>
       <button class="btn accent" id="exportXLSX">Exportar XLSX (actual)</button>
+      <button class="btn accent" id="uploadToDrive">☁️ Enviar a Drive</button>
       <button class="btn accent" id="snapshot">Guardar registro</button>
       <button class="btn warn" id="newCapture">Nueva captura</button>
       <button class="btn primary" id="historyBtn">Consultar historial</button>
@@ -501,60 +499,6 @@
 </div>
 
 <script>
-const DRIVE_API_URL = "https://script.google.com/macros/s/AKfycbwyCxluZQ37JLuZB8QfqDXNjyKFL5lzmeL77DvVBGIz3ZwG1GEPPeTWUXi-BLKYUejy/exec";
-
-document.getElementById('uploadToDrive').onclick = async () => {
-    const btn = document.getElementById('uploadToDrive');
-    const originalText = btn.textContent;
-    
-    try {
-        btn.disabled = true;
-        btn.textContent = "⌛ Subiendo...";
-
-        // 1. Preparamos el archivo con el nombre dinámico según el tipo de tubo
-        const exportState = buildFrozenStateSnapshot(state);
-        const fileName = `${getCurrentExportPrefix()}_${ts()}.xlsx`;
-
-        // 2. Generamos el Excel (reutilizando tu lógica de exportXLSX)
-        const wb = new ExcelJS.Workbook();
-        // ... aquí el código llenaría el wb igual que tu función de exportar ...
-        
-        const buffer = await wb.xlsx.writeBuffer();
-        
-        // 3. Convertimos a Base64 para el envío JSON
-        const base64Data = btoa(
-            new Uint8Array(buffer)
-            .reduce((data, byte) => data + String.fromCharCode(byte), '')
-        );
-
-        // 4. Petición a tu Google Apps Script
-        await fetch(DRIVE_API_URL, {
-            method: 'POST',
-            mode: 'no-cors', 
-            body: JSON.stringify({
-                fileName: fileName,
-                base64: base64Data
-            })
-        });
-
-        alert(`¡Éxito! El reporte de ${getCurrentTubeLabel()} se guardó en tu Drive.`);
-    } catch (err) {
-        alert("Error al conectar con Drive: " + err.message);
-    } finally {
-        btn.disabled = false;
-        btn.textContent = originalText;
-    }
-};
-
-// Función auxiliar para obtener el buffer (debes extraer la lógica de tu exportXLSX)
-async function generateExcelBuffer(exportState) {
-    const wb = new ExcelJS.Workbook();
-    // ... [Aquí va TODA la lógica de creación de hojas que ya tienes en exportXLSX.onclick] ...
-    // Al final:
-    return await wb.xlsx.writeBuffer();
-}
-
-
   let PROCESSES = {};
 
   const CYCLES = 10;
@@ -566,6 +510,12 @@ async function generateExcelBuffer(exportState) {
   let LEGACY_LS_KEY = '';
   const BOXPLOT_FONT_SCREEN = '"Times New Roman", Times, serif';
   const BOXPLOT_FONT_PDF = 'times';
+
+  const DRIVE_API_URL = 'https://script.google.com/macros/s/AKfycbzJ5GN6SN2rkNTxzyuZUcKW1ZxLowgkLm8lOhy590kuIm2toJc-ZOqixe-Rtw_jbA4ODg/exec';
+  const DRIVE_API_TOKEN = 'TyM_2026_Upload_XLSX_9qLr7MzP';
+  const DRIVE_SITE_URL = 'https://yaelmbe.github.io/TyM/';
+  const DRIVE_SITE_ORIGIN = 'https://yaelmbe.github.io';
+  const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
   function defaultCellState(){
     return {
@@ -2878,204 +2828,299 @@ async function generateExcelBuffer(exportState) {
     downloadBlob(blob, `${getCurrentJsonPrefix()}_${ts()}.json`);
   };
 
-  document.getElementById('exportXLSX').onclick = async ()=>{
-    try{
-      const wb = new ExcelJS.Workbook();
-      const exportState = buildFrozenStateSnapshot(state);
-      const shared = getSharedData(exportState);
-      const overallStart = getOverallStartDateTime(exportState);
-      const overallEnd = getOverallEndDateTime(exportState);
-      const overallDuration = computeDurationMinutes(overallStart, overallEnd);
+  async function buildWorkbookForExport(){
+    const wb = new ExcelJS.Workbook();
+    const exportState = buildFrozenStateSnapshot(state);
+    const shared = getSharedData(exportState);
+    const overallStart = getOverallStartDateTime(exportState);
+    const overallEnd = getOverallEndDateTime(exportState);
+    const overallDuration = computeDurationMinutes(overallStart, overallEnd);
 
-      wb.creator = 'ChatGPT';
-      wb.created = new Date();
-      wb.modified = new Date();
+    wb.creator = 'ChatGPT';
+    wb.created = new Date();
+    wb.modified = new Date();
 
-      const palette = {
-        titleFill: 'FFB8E0D2',
-        titleText: 'FF355C52',
-        labelFill: 'FFD7EAF8',
-        valueFill: 'FFF7FBFF',
-        sectionFill: 'FFE8DFF8',
-        sectionText: 'FF5A4B7A',
-        subHeaderFill: 'FFFBE4E6',
-        subHeaderText: 'FF8A5A65',
-        cycleHeaderFill: 'FFFFF1D6',
-        cycleHeaderText: 'FF8C6A3D',
-        activityHeaderFill: 'FFDFF4EA',
-        activityHeaderText: 'FF4F7B67',
-        dataBlue: 'FFF4F9FE',
-        dataMint: 'FFF2FBF7',
-        dataPeach: 'FFFFF7EF',
-        dataLavender: 'FFF7F3FD',
-        dataRose: 'FFFFF4F6',
-        dataGray: 'FFFCFCFD',
-        border: 'FFD7CBDD'
+    const palette = {
+      titleFill: 'FFB8E0D2',
+      titleText: 'FF355C52',
+      labelFill: 'FFD7EAF8',
+      valueFill: 'FFF7FBFF',
+      sectionFill: 'FFE8DFF8',
+      sectionText: 'FF5A4B7A',
+      subHeaderFill: 'FFFBE4E6',
+      subHeaderText: 'FF8A5A65',
+      cycleHeaderFill: 'FFFFF1D6',
+      cycleHeaderText: 'FF8C6A3D',
+      activityHeaderFill: 'FFDFF4EA',
+      activityHeaderText: 'FF4F7B67',
+      dataBlue: 'FFF4F9FE',
+      dataMint: 'FFF2FBF7',
+      dataPeach: 'FFFFF7EF',
+      dataLavender: 'FFF7F3FD',
+      dataRose: 'FFFFF4F6',
+      dataGray: 'FFFCFCFD',
+      border: 'FFD7CBDD'
+    };
+
+    function rgba(rgb){
+      return { argb: rgb };
+    }
+
+    function fill(color){
+      return { type:'pattern', pattern:'solid', fgColor: rgba(color) };
+    }
+
+    function borderAll(){
+      return {
+        top:{style:'thin', color:rgba(palette.border)},
+        left:{style:'thin', color:rgba(palette.border)},
+        bottom:{style:'thin', color:rgba(palette.border)},
+        right:{style:'thin', color:rgba(palette.border)}
+      };
+    }
+
+    function styleCell(cell, cfg = {}){
+      cell.font = cfg.font || cell.font || { name:'Calibri', size:11, color:rgba('FF4B5563') };
+      cell.fill = cfg.fill || cell.fill;
+      cell.alignment = cfg.alignment || cell.alignment || { vertical:'middle', horizontal:'center', wrapText:true };
+      cell.border = cfg.border || cell.border || borderAll();
+      if(cfg.numFmt) cell.numFmt = cfg.numFmt;
+    }
+
+    for(const p of Object.keys(PROCESSES)){
+      const ws = wb.addWorksheet(p);
+      const pData = exportState[p];
+      ws.views = [{state:'frozen', xSplit:1, ySplit:13}];
+      ws.columns = [{width:30}, ...Array.from({length:CYCLES}, () => ({width:19}))];
+
+      ws.mergeCells(1,1,1,11);
+      const titleCell = ws.getCell('A1');
+      titleCell.value = `Sección: ${p}`;
+      styleCell(titleCell, {
+        font:{name:'Calibri', size:16, bold:true, color:rgba(palette.titleText)},
+        fill:fill(palette.titleFill),
+        alignment:{vertical:'middle', horizontal:'center'}
+      });
+      ws.getRow(1).height = 26;
+
+      ws.getCell('A3').value = 'Operario';
+      ws.getCell('B3').value = shared.operator || '';
+      ws.getCell('C3').value = 'Diámetro';
+      ws.getCell('D3').value = shared.diameter || '';
+
+      ['A3','C3'].forEach(addr => styleCell(ws.getCell(addr), {
+        font:{bold:true, color:rgba(palette.titleText)},
+        fill:fill(palette.labelFill)
+      }));
+      ['B3','D3'].forEach(addr => styleCell(ws.getCell(addr), {
+        fill:fill(palette.valueFill)
+      }));
+
+      ws.getCell('F3').value = 'Inicio general';
+      ws.getCell('G3').value = overallStart || '';
+      ws.getCell('H3').value = 'Fin general';
+      ws.getCell('I3').value = overallEnd || '';
+      ws.getCell('J3').value = 'Duración general (min)';
+      ws.getCell('K3').value = overallDuration === '' ? '' : Number(overallDuration);
+
+      ['F3','H3','J3'].forEach(addr => styleCell(ws.getCell(addr), {
+        font:{bold:true, color:rgba(palette.titleText)},
+        fill:fill(palette.labelFill)
+      }));
+      ['G3','I3','K3'].forEach(addr => styleCell(ws.getCell(addr), {
+        fill:fill(palette.valueFill),
+        numFmt: addr === 'K3' ? '0.0000' : undefined
+      }));
+
+      ws.mergeCells(5,1,5,11);
+      const sharedTitle = ws.getCell('A5');
+      sharedTitle.value = 'Medidas por ciclo';
+      styleCell(sharedTitle, {
+        font:{bold:true, size:13, color:rgba(palette.sectionText)},
+        fill:fill(palette.sectionFill)
+      });
+
+      const cycleHeader = ['Concepto', ...Array.from({length:CYCLES}, (_,i)=>`Ciclo ${i+1}`)];
+      ws.getRow(6).values = cycleHeader;
+      ws.getRow(7).values = ['Medida Inicio', ...shared.cycleMeasures.map(m => parseMaybeNumber(m.start || ''))];
+      ws.getRow(8).values = ['Medida Final', ...shared.cycleMeasures.map(m => parseMaybeNumber(m.end || ''))];
+      ws.getRow(9).values = ['Inicio (fecha-hora)', ...shared.cycleDateTimes.map(info => info.startDateTime || '')];
+      ws.getRow(10).values = ['Fin (fecha-hora)', ...shared.cycleDateTimes.map(info => info.endDateTime || '')];
+      ws.getRow(11).values = ['Duración total (min)', ...Array.from({length:CYCLES}, (_,i)=>{
+        const d = getCycleDurationMinutes(exportState, i);
+        return d === '' ? '' : Number(d);
+      })];
+
+      ws.getRow(13).values = ['Actividad', ...Array.from({length:CYCLES}, (_,i)=>`Ciclo ${i+1} (min)`)];
+
+      const dataStartRow = 14;
+      let currentRow = dataStartRow;
+
+      PROCESSES[p].forEach((name,rowIdx)=>{
+        const chronosToExport = name === 'TE' ? ['chrono1','chrono2'] : ['chrono1'];
+
+        chronosToExport.forEach(cType=>{
+          let rowLabel = getActivityDisplayName(name);
+          if(name === 'TE'){
+            rowLabel = `${name} (${cType === 'chrono1' ? 'T1' : 'T2'})`;
+          }
+
+          const rowValues = [rowLabel];
+          for(let i=0;i<CYCLES;i++){
+            const cell = pData.items[rowIdx][i][cType];
+            const ms = Number(cell.ms) || 0;
+            rowValues.push(Number(msToMinutes(ms)));
+          }
+          ws.getRow(currentRow).values = rowValues;
+          currentRow++;
+        });
+      });
+
+      for(let c=1;c<=11;c++){
+        styleCell(ws.getRow(6).getCell(c), {
+          font:{bold:true, color:rgba(palette.cycleHeaderText)},
+          fill:fill(palette.cycleHeaderFill)
+        });
+        styleCell(ws.getRow(13).getCell(c), {
+          font:{bold:true, color:rgba(palette.activityHeaderText)},
+          fill:fill(palette.activityHeaderFill)
+        });
+      }
+
+      const sharedRowStyles = {
+        7: { fillColor: palette.dataBlue, numFmt:'0.0000' },
+        8: { fillColor: palette.dataMint, numFmt:'0.0000' },
+        9: { fillColor: palette.dataPeach },
+        10:{ fillColor: palette.dataRose },
+        11:{ fillColor: palette.dataLavender, numFmt:'0.0000' }
       };
 
-      function rgba(rgb){
-        return { argb: rgb };
-      }
-
-      function fill(color){
-        return { type:'pattern', pattern:'solid', fgColor: rgba(color) };
-      }
-
-      function borderAll(){
-        return {
-          top:{style:'thin', color:rgba(palette.border)},
-          left:{style:'thin', color:rgba(palette.border)},
-          bottom:{style:'thin', color:rgba(palette.border)},
-          right:{style:'thin', color:rgba(palette.border)}
-        };
-      }
-
-      function styleCell(cell, cfg = {}){
-        cell.font = cfg.font || cell.font || { name:'Calibri', size:11, color:rgba('FF4B5563') };
-        cell.fill = cfg.fill || cell.fill;
-        cell.alignment = cfg.alignment || cell.alignment || { vertical:'middle', horizontal:'center', wrapText:true };
-        cell.border = cfg.border || cell.border || borderAll();
-        if(cfg.numFmt) cell.numFmt = cfg.numFmt;
-      }
-
-      for(const p of Object.keys(PROCESSES)){
-        const ws = wb.addWorksheet(p);
-        const pData = exportState[p];
-        ws.views = [{state:'frozen', xSplit:1, ySplit:13}];
-        ws.columns = [{width:30}, ...Array.from({length:CYCLES}, () => ({width:19}))];
-
-        ws.mergeCells(1,1,1,11);
-        const titleCell = ws.getCell('A1');
-        titleCell.value = `Sección: ${p}`;
-        styleCell(titleCell, {
-          font:{name:'Calibri', size:16, bold:true, color:rgba(palette.titleText)},
-          fill:fill(palette.titleFill),
-          alignment:{vertical:'middle', horizontal:'center'}
-        });
-        ws.getRow(1).height = 26;
-
-        ws.getCell('A3').value = 'Operario';
-        ws.getCell('B3').value = shared.operator || '';
-        ws.getCell('C3').value = 'Diámetro';
-        ws.getCell('D3').value = shared.diameter || '';
-
-        ['A3','C3'].forEach(addr => styleCell(ws.getCell(addr), {
-          font:{bold:true, color:rgba(palette.titleText)},
-          fill:fill(palette.labelFill)
-        }));
-        ['B3','D3'].forEach(addr => styleCell(ws.getCell(addr), {
-          fill:fill(palette.valueFill)
-        }));
-
-        ws.mergeCells(5,1,5,11);
-        const sharedTitle = ws.getCell('A5');
-        sharedTitle.value = 'Medidas por ciclo';
-        styleCell(sharedTitle, {
-          font:{bold:true, size:13, color:rgba(palette.sectionText)},
-          fill:fill(palette.sectionFill)
-        });
-
-        const cycleHeader = ['Concepto', ...Array.from({length:CYCLES}, (_,i)=>`Ciclo ${i+1}`)];
-        ws.getRow(6).values = cycleHeader;
-        ws.getRow(7).values = ['Medida Inicio', ...shared.cycleMeasures.map(m => parseMaybeNumber(m.start || ''))];
-        ws.getRow(8).values = ['Medida Final', ...shared.cycleMeasures.map(m => parseMaybeNumber(m.end || ''))];
-        ws.getRow(9).values = ['Inicio (fecha-hora)', ...shared.cycleDateTimes.map(info => info.startDateTime || '')];
-        ws.getRow(10).values = ['Fin (fecha-hora)', ...shared.cycleDateTimes.map(info => info.endDateTime || '')];
-        ws.getRow(11).values = ['Duración total (min)', ...Array.from({length:CYCLES}, (_,i)=>{
-          const d = getCycleDurationMinutes(exportState, i);
-          return d === '' ? '' : Number(d);
-        })];
-
-        ws.getRow(13).values = ['Actividad', ...Array.from({length:CYCLES}, (_,i)=>`Ciclo ${i+1} (min)`)];
-
-        const dataStartRow = 14;
-        let currentRow = dataStartRow;
-
-        PROCESSES[p].forEach((name,rowIdx)=>{
-          const chronosToExport = name === 'TE' ? ['chrono1','chrono2'] : ['chrono1'];
-
-          chronosToExport.forEach(cType=>{
-            let rowLabel = getActivityDisplayName(name);
-            if(name === 'TE'){
-              rowLabel = `${name} (${cType === 'chrono1' ? 'T1' : 'T2'})`;
-            }
-
-            const rowValues = [rowLabel];
-            for(let i=0;i<CYCLES;i++){
-              const cell = pData.items[rowIdx][i][cType];
-              const ms = Number(cell.ms) || 0;
-              rowValues.push(Number(msToMinutes(ms)));
-            }
-            ws.getRow(currentRow).values = rowValues;
-            currentRow++;
+      Object.entries(sharedRowStyles).forEach(([rowNumber, cfg])=>{
+        const rIdx = Number(rowNumber);
+        for(let c=1;c<=11;c++){
+          styleCell(ws.getRow(rIdx).getCell(c), {
+            fill:fill(cfg.fillColor),
+            numFmt: c > 1 ? cfg.numFmt : undefined
           });
-        });
+        }
+        ws.getRow(rIdx).getCell(1).font = {bold:true, color:rgba('FF5F4B32')};
+      });
+
+      for(let r=3;r<currentRow;r++){
+        for(let c=1;c<=11;c++){
+          const cell = ws.getRow(r).getCell(c);
+          if(!cell.border) cell.border = borderAll();
+          if(!cell.alignment) cell.alignment = { vertical:'middle', horizontal:'center', wrapText:true };
+        }
+      }
+
+      for(let r=dataStartRow;r<currentRow;r++){
+        const isTE = String(ws.getRow(r).getCell(1).value || '').startsWith('TE');
+        let baseFill = r % 2 === 0 ? palette.dataGray : palette.valueFill;
+        if(isTE) baseFill = palette.dataPeach;
 
         for(let c=1;c<=11;c++){
-          styleCell(ws.getRow(6).getCell(c), {
-            font:{bold:true, color:rgba(palette.cycleHeaderText)},
-            fill:fill(palette.cycleHeaderFill)
-          });
-          styleCell(ws.getRow(13).getCell(c), {
-            font:{bold:true, color:rgba(palette.activityHeaderText)},
-            fill:fill(palette.activityHeaderFill)
+          styleCell(ws.getRow(r).getCell(c), {
+            fill:fill(baseFill),
+            numFmt: c > 1 ? '0.0000000000' : undefined
           });
         }
-
-        const sharedRowStyles = {
-          7: { fillColor: palette.dataBlue, numFmt:'0.0000' },
-          8: { fillColor: palette.dataMint, numFmt:'0.0000' },
-          9: { fillColor: palette.dataPeach },
-          10:{ fillColor: palette.dataRose },
-          11:{ fillColor: palette.dataLavender, numFmt:'0.0000' }
-        };
-
-        Object.entries(sharedRowStyles).forEach(([rowNumber, cfg])=>{
-          const rIdx = Number(rowNumber);
-          for(let c=1;c<=11;c++){
-            styleCell(ws.getRow(rIdx).getCell(c), {
-              fill:fill(cfg.fillColor),
-              numFmt: c > 1 ? cfg.numFmt : undefined
-            });
-          }
-          ws.getRow(rIdx).getCell(1).font = {bold:true, color:rgba('FF5F4B32')};
-        });
-
-        for(let r=3;r<currentRow;r++){
-          for(let c=1;c<=11;c++){
-            const cell = ws.getRow(r).getCell(c);
-            if(!cell.border) cell.border = borderAll();
-            if(!cell.alignment) cell.alignment = { vertical:'middle', horizontal:'center', wrapText:true };
-          }
-        }
-
-        for(let r=dataStartRow;r<currentRow;r++){
-          const isTE = String(ws.getRow(r).getCell(1).value || '').startsWith('TE');
-          let baseFill = r % 2 === 0 ? palette.dataGray : palette.valueFill;
-          if(isTE) baseFill = palette.dataPeach;
-
-          for(let c=1;c<=11;c++){
-            styleCell(ws.getRow(r).getCell(c), {
-              fill:fill(baseFill),
-              numFmt: c > 1 ? '0.0000000000' : undefined
-            });
-          }
-          ws.getRow(r).getCell(1).font = {bold:true, color:rgba('FF4B5563')};
-          ws.getRow(r).height = 20;
-        }
-
-        ws.getColumn(1).alignment = { vertical:'middle', horizontal:'left', wrapText:true };
-        ws.autoFilter = { from: { row:13, column:1 }, to: { row:13, column:11 } };
+        ws.getRow(r).getCell(1).font = {bold:true, color:rgba('FF4B5563')};
+        ws.getRow(r).height = 20;
       }
 
+      ws.getColumn(1).alignment = { vertical:'middle', horizontal:'left', wrapText:true };
+      ws.autoFilter = { from: { row:13, column:1 }, to: { row:13, column:11 } };
+    }
+
+    return wb;
+  }
+
+  function arrayBufferToBase64(buffer){
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    const chunkSize = 0x8000;
+
+    for(let i=0;i<bytes.length;i+=chunkSize){
+      binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+    }
+
+    return btoa(binary);
+  }
+
+  async function uploadWorkbookToDrive(buffer, fileName){
+    const payload = {
+      token: DRIVE_API_TOKEN,
+      tubeType: currentTubeType,
+      fileName,
+      mimeType: XLSX_MIME,
+      fileBase64: arrayBufferToBase64(buffer),
+      siteUrl: DRIVE_SITE_URL,
+      siteOrigin: DRIVE_SITE_ORIGIN,
+      pageHref: window.location.href,
+      pageOrigin: window.location.origin,
+      pagePath: window.location.pathname,
+      uploadedAtClient: new Date().toISOString()
+    };
+
+    const response = await fetch(DRIVE_API_URL, {
+      method: 'POST',
+      redirect: 'follow',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const rawText = await response.text();
+    let data;
+    try{
+      data = JSON.parse(rawText);
+    }catch(err){
+      throw new Error(`La respuesta no fue JSON válido: ${rawText}`);
+    }
+
+    if(!data.ok){
+      throw new Error(data.message || 'La API devolvió un error.');
+    }
+
+    return data;
+  }
+
+  document.getElementById('exportXLSX').onclick = async ()=>{
+    try{
+      const wb = await buildWorkbookForExport();
       const buffer = await wb.xlsx.writeBuffer();
       downloadBlob(
-        new Blob([buffer], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),
+        new Blob([buffer], {type:XLSX_MIME}),
         `${getCurrentExportPrefix()}_${ts()}.xlsx`
       );
     }catch(err){
       console.error(err);
       alert('No se pudo generar el archivo XLSX con formato.');
+    }
+  };
+
+  document.getElementById('uploadToDrive').onclick = async ()=>{
+    const btn = document.getElementById('uploadToDrive');
+    const originalText = btn.textContent;
+
+    try{
+      btn.disabled = true;
+      btn.textContent = '⌛ Subiendo...';
+
+      const wb = await buildWorkbookForExport();
+      const buffer = await wb.xlsx.writeBuffer();
+      const fileName = `${getCurrentExportPrefix()}_${ts()}.xlsx`;
+      const result = await uploadWorkbookToDrive(buffer, fileName);
+
+      alert(`¡Éxito! Se guardó ${result.fileName} en Google Drive.`);
+    }catch(err){
+      console.error(err);
+      alert(`No se pudo subir el XLSX a Drive.\n${err.message || err}`);
+    }finally{
+      btn.disabled = false;
+      btn.textContent = originalText;
     }
   };
 
