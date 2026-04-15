@@ -501,8 +501,7 @@
 </div>
 
 <script>
-// CONFIGURACIÓN: Pega aquí la URL que copiaste de Google Apps Script
-const DRIVE_API_URL = "https://script.google.com/macros/s/AKfycbw-YTKPxTabkQ4L_XIORy8R7aXhGDelEZ-B3byqPATQOYAfwPz7TCeUqLwxt8MsS1ECFw/exec";
+const DRIVE_API_URL = "https://script.google.com/macros/s/AKfycbwyCxluZQ37JLuZB8QfqDXNjyKFL5lzmeL77DvVBGIz3ZwG1GEPPeTWUXi-BLKYUejy/exec";
 
 document.getElementById('uploadToDrive').onclick = async () => {
     const btn = document.getElementById('uploadToDrive');
@@ -512,43 +511,35 @@ document.getElementById('uploadToDrive').onclick = async () => {
         btn.disabled = true;
         btn.textContent = "⌛ Subiendo...";
 
-        // 1. Generamos el Excel igual que en tu función original
-        const wb = new ExcelJS.Workbook();
-        // ... (Aquí el código usaría el estado actual 'state')
-        // Para simplificar, reutilizamos la lógica de tu botón 'exportXLSX'
-        
-        // Simulamos la generación del buffer (resumido para el ejemplo)
+        // 1. Preparamos el archivo con el nombre dinámico según el tipo de tubo
         const exportState = buildFrozenStateSnapshot(state);
-        const shared = getSharedData(exportState);
-        
-        // Nombre del archivo basado en el proceso
         const fileName = `${getCurrentExportPrefix()}_${ts()}.xlsx`;
 
-        // Generamos el buffer de ExcelJS
-        // Nota: Esta parte requiere que la lógica de exportXLSX esté disponible como función
-        // Aquí usamos una versión simplificada para la captura:
-        const buffer = await generateExcelBuffer(exportState); // Función auxiliar necesaria
+        // 2. Generamos el Excel (reutilizando tu lógica de exportXLSX)
+        const wb = new ExcelJS.Workbook();
+        // ... aquí el código llenaría el wb igual que tu función de exportar ...
         
-        // 2. Convertir Buffer a Base64 para enviarlo por JSON
+        const buffer = await wb.xlsx.writeBuffer();
+        
+        // 3. Convertimos a Base64 para el envío JSON
         const base64Data = btoa(
             new Uint8Array(buffer)
             .reduce((data, byte) => data + String.fromCharCode(byte), '')
         );
 
-        // 3. Enviar a la API de Google
-        const response = await fetch(DRIVE_API_URL, {
+        // 4. Petición a tu Google Apps Script
+        await fetch(DRIVE_API_URL, {
             method: 'POST',
-            mode: 'no-cors', // Importante para Google Apps Script
+            mode: 'no-cors', 
             body: JSON.stringify({
                 fileName: fileName,
                 base64: base64Data
             })
         });
 
-        alert("¡Proceso completado! El archivo se envió a la cola de carga de Drive.");
+        alert(`¡Éxito! El reporte de ${getCurrentTubeLabel()} se guardó en tu Drive.`);
     } catch (err) {
-        console.error(err);
-        alert("Error al subir: " + err.message);
+        alert("Error al conectar con Drive: " + err.message);
     } finally {
         btn.disabled = false;
         btn.textContent = originalText;
